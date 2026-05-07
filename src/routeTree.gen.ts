@@ -9,13 +9,31 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AffiliateRouteImport } from './routes/affiliate'
+import { Route as AcsadminRouteImport } from './routes/acsadmin'
 import { Route as AcessRouteImport } from './routes/acess'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AffiliateRoute = AffiliateRouteImport.update({
+  id: '/affiliate',
+  path: '/affiliate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcsadminRoute = AcsadminRouteImport.update({
+  id: '/acsadmin',
+  path: '/acsadmin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AcessRoute = AcessRouteImport.update({
@@ -32,40 +50,92 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/acess': typeof AcessRoute
+  '/acsadmin': typeof AcsadminRoute
+  '/affiliate': typeof AffiliateRoute
   '/dashboard': typeof DashboardRoute
+  '/reset-password': typeof ResetPasswordRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acess': typeof AcessRoute
+  '/acsadmin': typeof AcsadminRoute
+  '/affiliate': typeof AffiliateRoute
   '/dashboard': typeof DashboardRoute
+  '/reset-password': typeof ResetPasswordRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/acess': typeof AcessRoute
+  '/acsadmin': typeof AcsadminRoute
+  '/affiliate': typeof AffiliateRoute
   '/dashboard': typeof DashboardRoute
+  '/reset-password': typeof ResetPasswordRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/acess' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/acess'
+    | '/acsadmin'
+    | '/affiliate'
+    | '/dashboard'
+    | '/reset-password'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/acess' | '/dashboard'
-  id: '__root__' | '/' | '/acess' | '/dashboard'
+  to:
+    | '/'
+    | '/acess'
+    | '/acsadmin'
+    | '/affiliate'
+    | '/dashboard'
+    | '/reset-password'
+  id:
+    | '__root__'
+    | '/'
+    | '/acess'
+    | '/acsadmin'
+    | '/affiliate'
+    | '/dashboard'
+    | '/reset-password'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcessRoute: typeof AcessRoute
+  AcsadminRoute: typeof AcsadminRoute
+  AffiliateRoute: typeof AffiliateRoute
   DashboardRoute: typeof DashboardRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/affiliate': {
+      id: '/affiliate'
+      path: '/affiliate'
+      fullPath: '/affiliate'
+      preLoaderRoute: typeof AffiliateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acsadmin': {
+      id: '/acsadmin'
+      path: '/acsadmin'
+      fullPath: '/acsadmin'
+      preLoaderRoute: typeof AcsadminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/acess': {
@@ -88,8 +158,21 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessRoute: AcessRoute,
+  AcsadminRoute: AcsadminRoute,
+  AffiliateRoute: AffiliateRoute,
   DashboardRoute: DashboardRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
