@@ -69,7 +69,7 @@ function DashboardPage() {
     if (error) {
       toast.error("Erro ao carregar contas");
     } else {
-      setAccounts((data as Account[]) || []);
+      setAccounts((data as unknown as Account[]) || []);
     }
   };
 
