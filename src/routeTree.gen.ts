@@ -14,7 +14,10 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AffiliateRouteImport } from './routes/affiliate'
 import { Route as AcsadminRouteImport } from './routes/acsadmin'
 import { Route as AcessRouteImport } from './routes/acess'
+import { Route as R90RouteImport } from './routes/90'
+import { Route as R67RouteImport } from './routes/67'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicWebhookCaktoRouteImport } from './routes/api/public/webhook/cakto'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -41,71 +44,107 @@ const AcessRoute = AcessRouteImport.update({
   path: '/acess',
   getParentRoute: () => rootRouteImport,
 } as any)
+const R90Route = R90RouteImport.update({
+  id: '/90',
+  path: '/90',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R67Route = R67RouteImport.update({
+  id: '/67',
+  path: '/67',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhookCaktoRoute = ApiPublicWebhookCaktoRouteImport.update({
+  id: '/api/public/webhook/cakto',
+  path: '/api/public/webhook/cakto',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/67': typeof R67Route
+  '/90': typeof R90Route
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/affiliate': typeof AffiliateRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/67': typeof R67Route
+  '/90': typeof R90Route
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/affiliate': typeof AffiliateRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/67': typeof R67Route
+  '/90': typeof R90Route
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/affiliate': typeof AffiliateRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/67'
+    | '/90'
     | '/acess'
     | '/acsadmin'
     | '/affiliate'
     | '/dashboard'
     | '/reset-password'
+    | '/api/public/webhook/cakto'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/67'
+    | '/90'
     | '/acess'
     | '/acsadmin'
     | '/affiliate'
     | '/dashboard'
     | '/reset-password'
+    | '/api/public/webhook/cakto'
   id:
     | '__root__'
     | '/'
+    | '/67'
+    | '/90'
     | '/acess'
     | '/acsadmin'
     | '/affiliate'
     | '/dashboard'
     | '/reset-password'
+    | '/api/public/webhook/cakto'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  R67Route: typeof R67Route
+  R90Route: typeof R90Route
   AcessRoute: typeof AcessRoute
   AcsadminRoute: typeof AcsadminRoute
   AffiliateRoute: typeof AffiliateRoute
   DashboardRoute: typeof DashboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicWebhookCaktoRoute: typeof ApiPublicWebhookCaktoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -145,6 +184,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/90': {
+      id: '/90'
+      path: '/90'
+      fullPath: '/90'
+      preLoaderRoute: typeof R90RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/67': {
+      id: '/67'
+      path: '/67'
+      fullPath: '/67'
+      preLoaderRoute: typeof R67RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -152,16 +205,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhook/cakto': {
+      id: '/api/public/webhook/cakto'
+      path: '/api/public/webhook/cakto'
+      fullPath: '/api/public/webhook/cakto'
+      preLoaderRoute: typeof ApiPublicWebhookCaktoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  R67Route: R67Route,
+  R90Route: R90Route,
   AcessRoute: AcessRoute,
   AcsadminRoute: AcsadminRoute,
   AffiliateRoute: AffiliateRoute,
   DashboardRoute: DashboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicWebhookCaktoRoute: ApiPublicWebhookCaktoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
