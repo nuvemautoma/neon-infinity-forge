@@ -111,7 +111,9 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
+  #lovable-badge { display: none !important; }
 }
+
 
 @layer utilities {
   .glass {
