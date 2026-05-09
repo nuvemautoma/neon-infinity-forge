@@ -7,6 +7,7 @@ import { InfinityLogo } from "@/components/InfinityLogo";
 import { AccountCard } from "@/components/AccountCard";
 import { AccountDetailModal } from "@/components/AccountDetailModal";
 import { NotificationBell } from "@/components/NotificationBell";
+import { FloatingSupportButton } from "@/components/FloatingSupportButton";
 import { ForcePasswordChangeModal } from "@/components/ForcePasswordChangeModal";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
