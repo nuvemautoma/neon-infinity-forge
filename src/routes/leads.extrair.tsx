@@ -109,48 +109,61 @@ function ExtractPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <form onSubmit={onSearch} className="glass rounded-2xl p-5 mb-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">País</label>
-              <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Estado</label>
-              <input list="states" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} placeholder="SP, MG, etc." className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
-              <datalist id="states">{BR_STATES.map((s) => <option key={s.uf} value={s.name} />)}</datalist>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Cidade *</label>
-              <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Nicho</label>
-              <input list="niches" value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="restaurante, barbearia, academia..." className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
-              <datalist id="niches">{NICHE_SUGGESTIONS.map((n) => <option key={n} value={n} />)}</datalist>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Nome (opcional)</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Filtra por nome" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
+      <div className="container mx-auto px-4 py-6 max-w-5xl">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-foreground mb-1">Encontre comércios para prospectar</h2>
+          <p className="text-sm text-muted-foreground">Informe a localização e o nicho. O sistema busca em mapas públicos e tenta capturar email automaticamente.</p>
+        </div>
+
+        <form onSubmit={onSearch} className="glass rounded-2xl p-5 md:p-6 mb-6 space-y-5 border border-border">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">📍 Onde buscar</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">País</label>
+                <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Estado</label>
+                <input list="states" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} placeholder="Ex: São Paulo" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
+                <datalist id="states">{BR_STATES.map((s) => <option key={s.uf} value={s.name} />)}</datalist>
+              </div>
+              <div>
+                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Cidade</span> <span className="text-destructive">*</span></label>
+                <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required placeholder="Ex: Campinas" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-4 items-center">
+
+          <div>
+            <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">🎯 O que buscar</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Nicho</span> <span className="text-muted-foreground">(o que vende)</span></label>
+                <input list="niches" value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="restaurante, barbearia, academia…" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
+                <datalist id="niches">{NICHE_SUGGESTIONS.map((n) => <option key={n} value={n} />)}</datalist>
+              </div>
+              <div>
+                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Nome</span> <span className="text-muted-foreground">(opcional)</span></label>
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Filtrar por nome do comércio" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-border/50 flex flex-wrap gap-4 items-center">
             <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-              <input type="checkbox" checked={form.enrichEmail} onChange={(e) => setForm({ ...form, enrichEmail: e.target.checked })} className="accent-primary" />
+              <input type="checkbox" checked={form.enrichEmail} onChange={(e) => setForm({ ...form, enrichEmail: e.target.checked })} className="accent-primary w-4 h-4" />
               Buscar emails nos sites
             </label>
             {hasGoogleKey && (
               <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-                <input type="checkbox" checked={form.useGoogle} onChange={(e) => setForm({ ...form, useGoogle: e.target.checked })} className="accent-primary" />
+                <input type="checkbox" checked={form.useGoogle} onChange={(e) => setForm({ ...form, useGoogle: e.target.checked })} className="accent-primary w-4 h-4" />
                 Incluir Google Places (mais qualidade)
               </label>
             )}
-            <button disabled={loading} type="submit" className="ml-auto px-6 py-2.5 rounded-xl gradient-neon text-primary-foreground text-sm font-semibold neon-glow flex items-center gap-2 disabled:opacity-50">
+            <button disabled={loading} type="submit" className="ml-auto px-8 py-3 rounded-xl gradient-neon text-primary-foreground text-sm font-bold neon-glow flex items-center gap-2 disabled:opacity-50 hover:scale-[1.02] transition-transform">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              {loading ? "Buscando..." : "Buscar"}
+              {loading ? "Buscando…" : "Buscar leads"}
             </button>
           </div>
         </form>
