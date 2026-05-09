@@ -698,6 +698,7 @@ function AdminAffiliates() {
   const [affiliateHtml, setAffiliateHtml] = useState("");
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [visualOpen, setVisualOpen] = useState(false);
 
   useEffect(() => { load(); loadHtml(); }, []);
   const load = async () => { const { data } = await supabase.from("affiliate_links").select("*").order("sort_order"); setLinks(data || []); };
