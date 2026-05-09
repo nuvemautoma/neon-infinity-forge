@@ -250,6 +250,188 @@ export type Database = {
         }
         Relationships: []
       }
+      email_scrape_cache: {
+        Row: {
+          domain: string
+          email: string | null
+          scraped_at: string
+        }
+        Insert: {
+          domain: string
+          email?: string | null
+          scraped_at?: string
+        }
+        Update: {
+          domain?: string
+          email?: string | null
+          scraped_at?: string
+        }
+        Relationships: []
+      }
+      lead_columns: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      lead_tag_assignments: {
+        Row: {
+          lead_id: string
+          tag_id: string
+        }
+        Insert: {
+          lead_id: string
+          tag_id: string
+        }
+        Update: {
+          lead_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_tag_assignments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "lead_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          address: string | null
+          category: string | null
+          column_id: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          external_id: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          notes: string | null
+          phone: string | null
+          photo_url: string | null
+          position: number
+          rating: number | null
+          reviews_count: number | null
+          source: string
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          column_id?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          external_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          position?: number
+          rating?: number | null
+          reviews_count?: number | null
+          source?: string
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          column_id?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          external_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          position?: number
+          rating?: number | null
+          reviews_count?: number | null
+          source?: string
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "lead_columns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -353,8 +535,10 @@ export type Database = {
           banner_url: string | null
           custom_css: string | null
           favicon_url: string | null
+          google_places_api_key: string | null
           id: string
           landing_html: string | null
+          leads_allowed_plans: string[]
           logo_url: string | null
           primary_color: string | null
           secondary_color: string | null
@@ -369,8 +553,10 @@ export type Database = {
           banner_url?: string | null
           custom_css?: string | null
           favicon_url?: string | null
+          google_places_api_key?: string | null
           id?: string
           landing_html?: string | null
+          leads_allowed_plans?: string[]
           logo_url?: string | null
           primary_color?: string | null
           secondary_color?: string | null
@@ -385,8 +571,10 @@ export type Database = {
           banner_url?: string | null
           custom_css?: string | null
           favicon_url?: string | null
+          google_places_api_key?: string | null
           id?: string
           landing_html?: string | null
+          leads_allowed_plans?: string[]
           logo_url?: string | null
           primary_color?: string | null
           secondary_color?: string | null
@@ -491,7 +679,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      site_settings_public: {
+        Row: {
+          affiliate_html: string | null
+          background_color: string | null
+          banner_url: string | null
+          custom_css: string | null
+          favicon_url: string | null
+          has_google_places_key: boolean | null
+          id: string | null
+          landing_html: string | null
+          leads_allowed_plans: string[] | null
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          site_name: string | null
+          support_email: string | null
+          support_whatsapp: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          affiliate_html?: string | null
+          background_color?: string | null
+          banner_url?: string | null
+          custom_css?: string | null
+          favicon_url?: string | null
+          has_google_places_key?: never
+          id?: string | null
+          landing_html?: string | null
+          leads_allowed_plans?: string[] | null
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          site_name?: string | null
+          support_email?: string | null
+          support_whatsapp?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          affiliate_html?: string | null
+          background_color?: string | null
+          banner_url?: string | null
+          custom_css?: string | null
+          favicon_url?: string | null
+          has_google_places_key?: never
+          id?: string | null
+          landing_html?: string | null
+          leads_allowed_plans?: string[] | null
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          site_name?: string | null
+          support_email?: string | null
+          support_whatsapp?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_clear_all_stock: { Args: never; Returns: undefined }
