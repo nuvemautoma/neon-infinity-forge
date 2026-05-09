@@ -39,6 +39,7 @@ function AdminPanel() {
   const sidebarItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "accounts", label: "Produtos", icon: Package },
+    { id: "tools", label: "Ferramentas Excl.", icon: Wrench },
     { id: "stock", label: "Estoque", icon: Boxes },
     { id: "urgency", label: "Urgência", icon: AlertTriangle },
     { id: "support", label: "Solicitações", icon: Inbox },
