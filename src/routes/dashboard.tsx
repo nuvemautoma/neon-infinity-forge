@@ -30,11 +30,14 @@ interface Account {
   status: string;
   is_featured: boolean;
   is_hidden: boolean;
+  delivery_type?: string;
+  unlimited_stock?: boolean;
+  allowed_plans?: string[];
 }
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<{ email?: string; full_name?: string } | null>(null);
+  const [user, setUser] = useState<{ email?: string; full_name?: string; plan?: string } | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [search, setSearch] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
@@ -47,8 +50,9 @@ function DashboardPage() {
         navigate({ to: "/acess" });
         return;
       }
-      setUser({ email: authUser.email });
-      loadAccounts();
+      const { data: profile } = await supabase.from("profiles").select("plan, full_name, email").eq("id", authUser.id).single();
+      setUser({ email: authUser.email, full_name: profile?.full_name, plan: profile?.plan || "basic" });
+      loadAccounts(profile?.plan || "basic");
     };
     checkAuth();
 
@@ -59,18 +63,21 @@ function DashboardPage() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const loadAccounts = async () => {
+  const loadAccounts = async (plan: string) => {
     setLoading(true);
     const { data, error } = await supabase
       .from("accounts")
       .select("*")
+      .eq("status", "active")
       .order("is_featured", { ascending: false })
       .order("sort_order", { ascending: true });
     setLoading(false);
     if (error) {
       toast.error("Erro ao carregar contas");
     } else {
-      setAccounts((data as unknown as Account[]) || []);
+      const all = (data as unknown as Account[]) || [];
+      const allowed = all.filter((a) => !a.allowed_plans || a.allowed_plans.length === 0 || a.allowed_plans.includes(plan));
+      setAccounts(allowed);
     }
   };
 
