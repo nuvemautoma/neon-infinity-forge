@@ -94,6 +94,7 @@ export type Database = {
           image_url: string | null
           is_featured: boolean | null
           is_hidden: boolean | null
+          kind: string
           main_link: string | null
           name: string
           observations: string | null
@@ -114,6 +115,7 @@ export type Database = {
           image_url?: string | null
           is_featured?: boolean | null
           is_hidden?: boolean | null
+          kind?: string
           main_link?: string | null
           name: string
           observations?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           image_url?: string | null
           is_featured?: boolean | null
           is_hidden?: boolean | null
+          kind?: string
           main_link?: string | null
           name?: string
           observations?: string | null
@@ -178,6 +181,72 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      agenda_events: {
+        Row: {
+          created_at: string
+          days_of_week: number[]
+          description: string | null
+          id: string
+          is_active: boolean
+          notify_enabled: boolean
+          repeat_count: number
+          time_of_day: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_of_week?: number[]
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          notify_enabled?: boolean
+          repeat_count?: number
+          time_of_day: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days_of_week?: number[]
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          notify_enabled?: boolean
+          repeat_count?: number
+          time_of_day?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agenda_sent_log: {
+        Row: {
+          event_id: string
+          id: string
+          scheduled_for: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          scheduled_for: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          scheduled_for?: string
+          sent_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -244,6 +313,36 @@ export type Database = {
           purchase_date?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
