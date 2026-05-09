@@ -38,11 +38,13 @@ interface Account {
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<{ email?: string; full_name?: string; plan?: string } | null>(null);
+  const [user, setUser] = useState<{ id?: string; email?: string; full_name?: string; plan?: string } | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [search, setSearch] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [supportWhatsapp, setSupportWhatsapp] = useState<string>("");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -51,9 +53,13 @@ function DashboardPage() {
         navigate({ to: "/acess" });
         return;
       }
-      const { data: profile } = await supabase.from("profiles").select("plan, full_name, email").eq("id", authUser.id).single();
-      setUser({ email: authUser.email, full_name: profile?.full_name ?? undefined, plan: profile?.plan || "basic" });
+      const { data: profile } = await supabase.from("profiles").select("plan, full_name, email, must_change_password").eq("id", authUser.id).single();
+      setUser({ id: authUser.id, email: authUser.email, full_name: profile?.full_name ?? undefined, plan: profile?.plan || "basic" });
+      setMustChangePassword(!!(profile as any)?.must_change_password);
       loadAccounts(profile?.plan || "basic");
+
+      const { data: settings } = await supabase.from("site_settings").select("support_whatsapp").limit(1).maybeSingle();
+      setSupportWhatsapp((settings as any)?.support_whatsapp || "");
     };
     checkAuth();
 
