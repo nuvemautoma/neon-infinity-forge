@@ -801,6 +801,7 @@ function AdminAffiliates() {
 function AdminSettings() {
   const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", landing_html: "", support_whatsapp: "" });
   const [showPreview, setShowPreview] = useState(false);
+  const [visualOpen, setVisualOpen] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
