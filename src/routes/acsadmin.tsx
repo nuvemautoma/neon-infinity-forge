@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { LayoutDashboard, Package, Users, Share2, Settings, LogOut, Plus, Pencil, Trash2, Eye, EyeOff, Star, Inbox, Bell, AlertTriangle, Boxes, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
+import { HtmlAiPanel } from "@/components/HtmlAiPanel";
 import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/acsadmin")({
@@ -693,9 +694,22 @@ function AdminAffiliates() {
   const [links, setLinks] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", commission: "", affiliate_url: "", image_url: "" });
+  const [affiliateHtml, setAffiliateHtml] = useState("");
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); loadHtml(); }, []);
   const load = async () => { const { data } = await supabase.from("affiliate_links").select("*").order("sort_order"); setLinks(data || []); };
+  const loadHtml = async () => {
+    const { data } = await supabase.from("site_settings").select("id, affiliate_html").limit(1).maybeSingle();
+    if (data) { setSettingsId(data.id); setAffiliateHtml((data as any).affiliate_html || ""); }
+  };
+  const saveHtml = async () => {
+    if (!settingsId) { toast.error("Configurações do site não encontradas"); return; }
+    const { error } = await supabase.from("site_settings").update({ affiliate_html: affiliateHtml } as any).eq("id", settingsId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("HTML de afiliados salvo!");
+  };
   const save = async () => {
     if (!form.name || !form.affiliate_url) { toast.error("Nome e URL obrigatórios"); return; }
     await supabase.from("affiliate_links").insert(form);
@@ -706,35 +720,58 @@ function AdminAffiliates() {
   const remove = async (id: string) => { await supabase.from("affiliate_links").delete().eq("id", id); load(); };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Afiliados</h1>
-        <button onClick={() => setShowForm(true)} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground flex items-center gap-2 neon-glow">
-          <Plus className="w-4 h-4" /> Novo Link
-        </button>
-      </div>
-      {showForm && (
-        <div className="glass rounded-2xl p-6 mb-6 space-y-3">
-          {[{ k: "name", l: "Nome" }, { k: "commission", l: "Comissão" }, { k: "affiliate_url", l: "URL" }, { k: "image_url", l: "Imagem" }].map((f) => (
-            <input key={f.k} placeholder={f.l} value={(form as any)[f.k]} onChange={(e) => setForm({ ...form, [f.k]: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
-          ))}
-          <textarea placeholder="Descrição" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm h-16 resize-none" />
-          <div className="flex gap-2">
-            <button onClick={save} className="gradient-neon px-6 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow">Criar</button>
-            <button onClick={() => setShowForm(false)} className="px-6 py-2 rounded-xl text-sm border border-border text-muted-foreground">Cancelar</button>
-          </div>
+    <div className="space-y-8">
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Afiliados</h1>
+          <button onClick={() => setShowForm(true)} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground flex items-center gap-2 neon-glow">
+            <Plus className="w-4 h-4" /> Novo Link
+          </button>
         </div>
-      )}
-      <div className="space-y-3">
-        {links.map((l) => (
-          <div key={l.id} className="glass rounded-2xl p-5 flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-foreground">{l.name}</p>
-              <p className="text-sm text-muted-foreground">{l.commission || "—"}</p>
+        {showForm && (
+          <div className="glass rounded-2xl p-6 mb-6 space-y-3">
+            {[{ k: "name", l: "Nome" }, { k: "commission", l: "Comissão" }, { k: "affiliate_url", l: "URL" }, { k: "image_url", l: "Imagem" }].map((f) => (
+              <input key={f.k} placeholder={f.l} value={(form as any)[f.k]} onChange={(e) => setForm({ ...form, [f.k]: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
+            ))}
+            <textarea placeholder="Descrição" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm h-16 resize-none" />
+            <div className="flex gap-2">
+              <button onClick={save} className="gradient-neon px-6 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow">Criar</button>
+              <button onClick={() => setShowForm(false)} className="px-6 py-2 rounded-xl text-sm border border-border text-muted-foreground">Cancelar</button>
             </div>
-            <button onClick={() => remove(l.id)} className="p-2 rounded-lg hover:bg-accent"><Trash2 className="w-4 h-4 text-destructive" /></button>
           </div>
-        ))}
+        )}
+        <div className="space-y-3">
+          {links.map((l) => (
+            <div key={l.id} className="glass rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-foreground">{l.name}</p>
+                <p className="text-sm text-muted-foreground">{l.commission || "—"}</p>
+              </div>
+              <button onClick={() => remove(l.id)} className="p-2 rounded-lg hover:bg-accent"><Trash2 className="w-4 h-4 text-destructive" /></button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="glass rounded-2xl p-6 space-y-4 max-w-4xl">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-foreground">HTML customizado da página /afiliados</h2>
+          <button onClick={() => setShowPreview((v) => !v)} className="text-xs text-primary hover:underline">{showPreview ? "Ocultar" : "Visualizar"} preview</button>
+        </div>
+        <p className="text-xs text-muted-foreground">Quando preenchido, substitui a página padrão de afiliados em tempo real.</p>
+        <textarea value={affiliateHtml} onChange={(e) => setAffiliateHtml(e.target.value)} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-80 resize-y" />
+        {showPreview && affiliateHtml && (
+          <div className="rounded-xl overflow-hidden border border-border bg-black">
+            <iframe title="Preview Afiliados" srcDoc={affiliateHtml} sandbox="allow-same-origin" className="w-full h-[500px] border-0" />
+          </div>
+        )}
+        <button onClick={saveHtml} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">Salvar HTML de afiliados</button>
+
+        <HtmlAiPanel
+          label="IA — Editora da página de Afiliados"
+          currentHtml={affiliateHtml}
+          onResult={(html) => setAffiliateHtml(html)}
+        />
       </div>
     </div>
   );
@@ -742,6 +779,7 @@ function AdminAffiliates() {
 
 function AdminSettings() {
   const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", landing_html: "" });
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -756,14 +794,17 @@ function AdminSettings() {
   };
   const save = async () => {
     const { data: existing } = await supabase.from("site_settings").select("id").limit(1).single();
-    if (existing) await supabase.from("site_settings").update(settings).eq("id", existing.id);
-    toast.success("Configurações salvas!");
+    if (existing) {
+      const { error } = await supabase.from("site_settings").update(settings).eq("id", existing.id);
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success("Configurações salvas! A landing foi atualizada em tempo real.");
   };
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-foreground mb-6">Personalização</h1>
-      <div className="glass rounded-2xl p-6 space-y-6 max-w-3xl">
+      <div className="glass rounded-2xl p-6 space-y-6 max-w-4xl">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Nome do site</label>
           <input value={settings.site_name} onChange={(e) => setSettings({ ...settings, site_name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
@@ -777,11 +818,27 @@ function AdminSettings() {
             <input type="color" value={(settings as any)[c.key]} onChange={(e) => setSettings({ ...settings, [c.key]: e.target.value })} className="w-10 h-10 rounded-xl border-0 cursor-pointer" />
           </div>
         ))}
+
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-muted-foreground block">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
+            <button onClick={() => setShowPreview((v) => !v)} className="text-xs text-primary hover:underline">{showPreview ? "Ocultar" : "Visualizar"} preview</button>
+          </div>
           <textarea value={settings.landing_html} onChange={(e) => setSettings({ ...settings, landing_html: e.target.value })} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-96 resize-y" />
+          {showPreview && settings.landing_html && (
+            <div className="mt-3 rounded-xl overflow-hidden border border-border bg-black">
+              <iframe title="Preview" srcDoc={settings.landing_html} sandbox="allow-same-origin" className="w-full h-[500px] border-0" />
+            </div>
+          )}
         </div>
+
         <button onClick={save} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">Salvar alterações</button>
+
+        <HtmlAiPanel
+          label="IA — Editora da Landing Page"
+          currentHtml={settings.landing_html}
+          onResult={(html) => setSettings((s) => ({ ...s, landing_html: html }))}
+        />
       </div>
     </div>
   );

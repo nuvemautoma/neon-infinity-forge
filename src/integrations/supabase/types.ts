@@ -243,6 +243,7 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          affiliate_html: string | null
           background_color: string | null
           banner_url: string | null
           custom_css: string | null
@@ -256,6 +257,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          affiliate_html?: string | null
           background_color?: string | null
           banner_url?: string | null
           custom_css?: string | null
@@ -269,6 +271,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          affiliate_html?: string | null
           background_color?: string | null
           banner_url?: string | null
           custom_css?: string | null

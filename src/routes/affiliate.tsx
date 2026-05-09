@@ -16,17 +16,40 @@ function AffiliatePage() {
   const navigate = useNavigate();
   const [links, setLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customHtml, setCustomHtml] = useState<string | null>(null);
 
   useEffect(() => {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate({ to: "/acess" }); return; }
+      const { data: settings } = await supabase.from("site_settings").select("affiliate_html").limit(1).maybeSingle();
+      const html = (settings as any)?.affiliate_html?.trim() || null;
+      setCustomHtml(html);
       const { data } = await supabase.from("affiliate_links").select("*").eq("is_active", true).order("sort_order");
       setLinks(data || []);
       setLoading(false);
     };
     check();
+
+    const channel = supabase
+      .channel("site_settings_affiliate")
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, (payload: any) => {
+        setCustomHtml(payload.new?.affiliate_html?.trim() || null);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [navigate]);
+
+  if (!loading && customHtml) {
+    return (
+      <iframe
+        title="Afiliados"
+        srcDoc={customHtml}
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation-by-user-activation"
+        className="w-screen h-screen border-0 block"
+      />
+    );
+  }
 
   const copyLink = (url: string) => {
     navigator.clipboard.writeText(url);
