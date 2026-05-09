@@ -7,7 +7,8 @@ import { InfinityLogo } from "@/components/InfinityLogo";
 import { FloatingSupportButton } from "@/components/FloatingSupportButton";
 import { extractLeads } from "@/lib/leads-extract.functions";
 import type { LeadResult } from "@/lib/leads-extract.functions";
-import { NICHE_SUGGESTIONS, BR_STATES } from "@/components/Leads/types";
+import { NICHE_SUGGESTIONS, BR_STATES, COUNTRIES } from "@/components/Leads/types";
+import { Combobox } from "@/components/Leads/Combobox";
 import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/leads/extrair")({
