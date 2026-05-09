@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ClonerRouteImport } from './routes/cloner'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AcsadminRouteImport } from './routes/acsadmin'
 import { Route as AcessRouteImport } from './routes/acess'
@@ -25,6 +26,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClonerRoute = ClonerRouteImport.update({
+  id: '/cloner',
+  path: '/cloner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgendaRoute = AgendaRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
+  '/cloner': typeof ClonerRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
+  '/cloner': typeof ClonerRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
+  '/cloner': typeof ClonerRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/acess'
     | '/acsadmin'
     | '/agenda'
+    | '/cloner'
     | '/dashboard'
     | '/reset-password'
     | '/api/public/webhook/cakto'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/acess'
     | '/acsadmin'
     | '/agenda'
+    | '/cloner'
     | '/dashboard'
     | '/reset-password'
     | '/api/public/webhook/cakto'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/acess'
     | '/acsadmin'
     | '/agenda'
+    | '/cloner'
     | '/dashboard'
     | '/reset-password'
     | '/api/public/webhook/cakto'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AcessRoute: typeof AcessRoute
   AcsadminRoute: typeof AcsadminRoute
   AgendaRoute: typeof AgendaRoute
+  ClonerRoute: typeof ClonerRoute
   DashboardRoute: typeof DashboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicWebhookCaktoRoute: typeof ApiPublicWebhookCaktoRoute
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cloner': {
+      id: '/cloner'
+      path: '/cloner'
+      fullPath: '/cloner'
+      preLoaderRoute: typeof ClonerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agenda': {
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcessRoute: AcessRoute,
   AcsadminRoute: AcsadminRoute,
   AgendaRoute: AgendaRoute,
+  ClonerRoute: ClonerRoute,
   DashboardRoute: DashboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicWebhookCaktoRoute: ApiPublicWebhookCaktoRoute,
@@ -187,3 +208,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
