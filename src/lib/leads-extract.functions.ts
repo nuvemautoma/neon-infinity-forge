@@ -1,6 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import type { LeadResult } from "./leads.functions";
+
+export type LeadResult = {
+  external_id: string;
+  source: "osm" | "google";
+  name: string;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  rating: number | null;
+  reviews_count: number | null;
+  photo_url: string | null;
+  description: string | null;
+  category: string | null;
+};
 
 const ExtractSchema = z.object({
   country: z.string().min(2).max(60),
