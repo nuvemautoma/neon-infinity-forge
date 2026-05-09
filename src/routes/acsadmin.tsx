@@ -5,6 +5,7 @@ import { LayoutDashboard, Package, Users, Share2, Settings, LogOut, Plus, Pencil
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { HtmlAiPanel } from "@/components/HtmlAiPanel";
+import { GrapesEditor } from "@/components/GrapesEditor";
 import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/acsadmin")({
