@@ -6,7 +6,7 @@ import { Eye, EyeOff, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { resetPasswordWithPurchase } from "@/lib/password-reset.functions";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/acess")({
   component: LoginPage,
