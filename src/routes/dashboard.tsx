@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, LogOut, User, LayoutGrid } from "lucide-react";
+import { Search, LogOut, User, LayoutGrid, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { AccountCard } from "@/components/AccountCard";
 import { AccountDetailModal } from "@/components/AccountDetailModal";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ForcePasswordChangeModal } from "@/components/ForcePasswordChangeModal";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 
