@@ -32,11 +32,16 @@ function LoginPage() {
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error, data } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
     if (error) {
-      toast.error("Email ou senha incorretos");
-    } else {
+      const msg = error.message?.toLowerCase() || "";
+      if (msg.includes("invalid")) toast.error("Email ou senha incorretos");
+      else if (msg.includes("confirm")) toast.error("Confirme seu email antes de entrar");
+      else toast.error(error.message || "Não foi possível entrar");
+    } else if (data.session) {
+      // aguarda persistir a sessão antes de redirecionar
+      await supabase.auth.getSession();
       window.location.href = "/dashboard";
     }
   };
