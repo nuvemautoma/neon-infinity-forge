@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, LogOut, User, LayoutGrid, Calendar as CalendarIcon, Wrench } from "lucide-react";
+import { Search, LogOut, User, LayoutGrid, Calendar as CalendarIcon, Wrench, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { AccountCard } from "@/components/AccountCard";
@@ -125,6 +125,7 @@ function DashboardPage() {
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/dashboard" className="text-sm font-medium text-primary">Dashboard</Link>
             <Link to="/agenda" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Agenda</Link>
+            <Link to="/leads" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Leads</Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -221,6 +222,22 @@ function DashboardPage() {
             </div>
           </section>
         )}
+
+        {/* CTA Leads */}
+        <Link
+          to="/leads"
+          className="mt-6 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow">
+              <Users className="w-7 h-7 text-primary-foreground" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Extrator de Leads + CRM</h3>
+              <p className="text-sm text-muted-foreground">Extraia comércios do Google Maps / OSM por nicho e cidade, e organize tudo em um Kanban com etiquetas personalizadas.</p>
+            </div>
+          </div>
+        </Link>
 
         {/* CTA Agenda */}
         <Link
