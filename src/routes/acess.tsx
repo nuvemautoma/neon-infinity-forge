@@ -60,21 +60,43 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Ambient glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-25 pointer-events-none" style={{ background: "radial-gradient(ellipse, oklch(0.65 0.22 250 / 50%), transparent 70%)" }} />
+      {/* Aurora background */}
+      <div className="absolute inset-0 bg-aurora pointer-events-none" />
+      {/* Animated grid */}
+      <div className="absolute inset-0 bg-grid pointer-events-none" />
+
+      {/* Floating gradient blobs */}
+      <div
+        aria-hidden
+        className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full blur-3xl opacity-40 animate-blob pointer-events-none"
+        style={{ background: "radial-gradient(circle, oklch(0.55 0.22 250 / 70%), transparent 70%)" }}
+      />
+      <div
+        aria-hidden
+        className="absolute -bottom-40 -right-32 w-[600px] h-[600px] rounded-full blur-3xl opacity-35 animate-blob pointer-events-none"
+        style={{ background: "radial-gradient(circle, oklch(0.60 0.22 300 / 60%), transparent 70%)", animationDelay: "-6s" }}
+      />
+      <div
+        aria-hidden
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-3xl opacity-25 animate-blob pointer-events-none"
+        style={{ background: "radial-gradient(circle, oklch(0.70 0.20 200 / 60%), transparent 70%)", animationDelay: "-12s" }}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="glass-strong rounded-3xl p-8 w-full max-w-md relative z-10 neon-glow"
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="glass-strong rounded-3xl p-8 w-full max-w-md relative z-10 neon-glow-strong border-glow"
       >
-        <div className="text-center mb-8">
+        {/* Conic glow border accent */}
+        <div aria-hidden className="absolute -inset-px rounded-3xl conic-glow opacity-20 pointer-events-none animate-spin-slow" />
+
+        <div className="relative text-center mb-8">
           <div className="flex justify-center mb-4">
-            <InfinityLogo size={64} />
+            <InfinityLogo size={84} />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">INFINITY I.A</h1>
-          <p className="text-sm text-primary mt-1 tracking-widest uppercase">Entrega de Contas Plus</p>
+          <h1 className="text-3xl font-bold gradient-neon-text">INFINITY I.A</h1>
+          <p className="text-xs text-primary mt-2 tracking-[0.3em] uppercase opacity-80">Entrega de Contas Plus</p>
         </div>
 
         {isReset ? (
