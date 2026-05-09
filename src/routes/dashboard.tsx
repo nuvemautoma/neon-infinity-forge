@@ -58,9 +58,19 @@ function DashboardPage() {
         return;
       }
       const { data: profile } = await supabase.from("profiles").select("plan, full_name, email, must_change_password").eq("id", authUser.id).single();
-      setUser({ id: authUser.id, email: authUser.email, full_name: profile?.full_name ?? undefined, plan: profile?.plan || "basic" });
+      const userPlan = profile?.plan || "basic";
+      setUser({ id: authUser.id, email: authUser.email, full_name: profile?.full_name ?? undefined, plan: userPlan });
       setMustChangePassword(!!(profile as any)?.must_change_password);
-      loadAccounts(profile?.plan || "basic");
+
+      const [{ data: settings }, { data: roles }] = await Promise.all([
+        supabase.from("site_settings").select("cloner_allowed_plans").maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", authUser.id),
+      ]);
+      const isAdmin = (roles || []).some((r) => r.role === "admin");
+      const planList = (settings as any)?.cloner_allowed_plans || ["standard"];
+      setClonerAllowed(isAdmin || planList.includes(userPlan));
+
+      loadAccounts(userPlan);
     };
     checkAuth();
 
