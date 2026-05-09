@@ -289,6 +289,7 @@ function AgendaPage() {
           ))}
         </div>
       </main>
+      <FloatingSupportButton />
     </div>
   );
 }
