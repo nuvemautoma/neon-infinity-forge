@@ -11,12 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as ClonerRouteImport } from './routes/cloner'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AcsadminRouteImport } from './routes/acsadmin'
 import { Route as AcessRouteImport } from './routes/acess'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ClonerIdRouteImport } from './routes/cloner.$id'
 import { Route as ApiPublicWebhookCaktoRouteImport } from './routes/api/public/webhook/cakto'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -27,11 +25,6 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClonerRoute = ClonerRouteImport.update({
-  id: '/cloner',
-  path: '/cloner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgendaRoute = AgendaRouteImport.update({
@@ -54,11 +47,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ClonerIdRoute = ClonerIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ClonerRoute,
-} as any)
 const ApiPublicWebhookCaktoRoute = ApiPublicWebhookCaktoRouteImport.update({
   id: '/api/public/webhook/cakto',
   path: '/api/public/webhook/cakto',
@@ -70,10 +58,8 @@ export interface FileRoutesByFullPath {
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
-  '/cloner': typeof ClonerRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/cloner/$id': typeof ClonerIdRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRoutesByTo {
@@ -81,10 +67,8 @@ export interface FileRoutesByTo {
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
-  '/cloner': typeof ClonerRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/cloner/$id': typeof ClonerIdRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRoutesById {
@@ -93,10 +77,8 @@ export interface FileRoutesById {
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
-  '/cloner': typeof ClonerRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/cloner/$id': typeof ClonerIdRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRouteTypes {
@@ -106,10 +88,8 @@ export interface FileRouteTypes {
     | '/acess'
     | '/acsadmin'
     | '/agenda'
-    | '/cloner'
     | '/dashboard'
     | '/reset-password'
-    | '/cloner/$id'
     | '/api/public/webhook/cakto'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,10 +97,8 @@ export interface FileRouteTypes {
     | '/acess'
     | '/acsadmin'
     | '/agenda'
-    | '/cloner'
     | '/dashboard'
     | '/reset-password'
-    | '/cloner/$id'
     | '/api/public/webhook/cakto'
   id:
     | '__root__'
@@ -128,10 +106,8 @@ export interface FileRouteTypes {
     | '/acess'
     | '/acsadmin'
     | '/agenda'
-    | '/cloner'
     | '/dashboard'
     | '/reset-password'
-    | '/cloner/$id'
     | '/api/public/webhook/cakto'
   fileRoutesById: FileRoutesById
 }
@@ -140,7 +116,6 @@ export interface RootRouteChildren {
   AcessRoute: typeof AcessRoute
   AcsadminRoute: typeof AcsadminRoute
   AgendaRoute: typeof AgendaRoute
-  ClonerRoute: typeof ClonerRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicWebhookCaktoRoute: typeof ApiPublicWebhookCaktoRoute
@@ -160,13 +135,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cloner': {
-      id: '/cloner'
-      path: '/cloner'
-      fullPath: '/cloner'
-      preLoaderRoute: typeof ClonerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agenda': {
@@ -197,13 +165,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cloner/$id': {
-      id: '/cloner/$id'
-      path: '/$id'
-      fullPath: '/cloner/$id'
-      preLoaderRoute: typeof ClonerIdRouteImport
-      parentRoute: typeof ClonerRoute
-    }
     '/api/public/webhook/cakto': {
       id: '/api/public/webhook/cakto'
       path: '/api/public/webhook/cakto'
@@ -214,23 +175,11 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ClonerRouteChildren {
-  ClonerIdRoute: typeof ClonerIdRoute
-}
-
-const ClonerRouteChildren: ClonerRouteChildren = {
-  ClonerIdRoute: ClonerIdRoute,
-}
-
-const ClonerRouteWithChildren =
-  ClonerRoute._addFileChildren(ClonerRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessRoute: AcessRoute,
   AcsadminRoute: AcsadminRoute,
   AgendaRoute: AgendaRoute,
-  ClonerRoute: ClonerRouteWithChildren,
   DashboardRoute: DashboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicWebhookCaktoRoute: ApiPublicWebhookCaktoRoute,
@@ -238,3 +187,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
