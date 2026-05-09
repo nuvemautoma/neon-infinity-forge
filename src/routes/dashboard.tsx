@@ -96,11 +96,11 @@ function DashboardPage() {
     navigate({ to: "/acess" });
   };
 
-  const filtered = accounts.filter(
-    (a) =>
-      a.name.toLowerCase().includes(search.toLowerCase()) ||
-      a.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const matches = (a: Account) =>
+    a.name.toLowerCase().includes(search.toLowerCase()) ||
+    a.category.toLowerCase().includes(search.toLowerCase());
+  const filtered = accounts.filter(matches);
+  const filteredTools = tools.filter(matches);
 
   return (
     <div className="min-h-screen bg-background">
