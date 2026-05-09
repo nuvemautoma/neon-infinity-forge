@@ -409,13 +409,19 @@ function AdminAffiliates() {
 }
 
 function AdminSettings() {
-  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19" });
+  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", landing_html: "" });
 
   useEffect(() => { load(); }, []);
 
   const load = async () => {
     const { data } = await supabase.from("site_settings").select("*").limit(1).single();
-    if (data) setSettings({ site_name: data.site_name || "", primary_color: data.primary_color || "#00B4FF", secondary_color: data.secondary_color || "#7A00FF", background_color: data.background_color || "#0B0F19" });
+    if (data) setSettings({
+      site_name: data.site_name || "",
+      primary_color: data.primary_color || "#00B4FF",
+      secondary_color: data.secondary_color || "#7A00FF",
+      background_color: data.background_color || "#0B0F19",
+      landing_html: (data as any).landing_html || "",
+    });
   };
 
   const save = async () => {
@@ -429,7 +435,7 @@ function AdminSettings() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-foreground mb-6">Personalização</h1>
-      <div className="glass rounded-2xl p-6 space-y-6 max-w-xl">
+      <div className="glass rounded-2xl p-6 space-y-6 max-w-3xl">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Nome do site</label>
           <input value={settings.site_name} onChange={(e) => setSettings({ ...settings, site_name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
@@ -447,6 +453,18 @@ function AdminSettings() {
             <input type="color" value={(settings as any)[c.key]} onChange={(e) => setSettings({ ...settings, [c.key]: e.target.value })} className="w-10 h-10 rounded-xl border-0 cursor-pointer" />
           </div>
         ))}
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">
+            HTML da Landing Page (rota /) — deixe vazio para usar a landing padrão. As alterações aparecem em tempo real.
+          </label>
+          <textarea
+            value={settings.landing_html}
+            onChange={(e) => setSettings({ ...settings, landing_html: e.target.value })}
+            placeholder="<!DOCTYPE html><html>...</html>  ou trecho HTML/CSS"
+            spellCheck={false}
+            className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-96 resize-y focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </div>
         <button onClick={save} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">
           Salvar alterações
         </button>

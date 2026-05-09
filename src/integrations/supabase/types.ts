@@ -171,6 +171,7 @@ export type Database = {
           custom_css: string | null
           favicon_url: string | null
           id: string
+          landing_html: string | null
           logo_url: string | null
           primary_color: string | null
           secondary_color: string | null
@@ -183,6 +184,7 @@ export type Database = {
           custom_css?: string | null
           favicon_url?: string | null
           id?: string
+          landing_html?: string | null
           logo_url?: string | null
           primary_color?: string | null
           secondary_color?: string | null
@@ -195,6 +197,7 @@ export type Database = {
           custom_css?: string | null
           favicon_url?: string | null
           id?: string
+          landing_html?: string | null
           logo_url?: string | null
           primary_color?: string | null
           secondary_color?: string | null
