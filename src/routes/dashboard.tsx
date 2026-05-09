@@ -41,6 +41,7 @@ function DashboardPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ id?: string; email?: string; full_name?: string; plan?: string } | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [tools, setTools] = useState<Account[]>([]);
   const [search, setSearch] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
