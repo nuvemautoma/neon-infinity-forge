@@ -250,36 +250,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cloned_pages: {
-        Row: {
-          created_at: string
-          editor_data: Json
-          id: string
-          name: string
-          source_url: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          editor_data?: Json
-          id?: string
-          name: string
-          source_url?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          editor_data?: Json
-          id?: string
-          name?: string
-          source_url?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       notifications: {
         Row: {
           created_at: string
@@ -381,7 +351,6 @@ export type Database = {
           affiliate_html: string | null
           background_color: string | null
           banner_url: string | null
-          cloner_allowed_plans: string[]
           custom_css: string | null
           favicon_url: string | null
           id: string
@@ -398,7 +367,6 @@ export type Database = {
           affiliate_html?: string | null
           background_color?: string | null
           banner_url?: string | null
-          cloner_allowed_plans?: string[]
           custom_css?: string | null
           favicon_url?: string | null
           id?: string
@@ -415,7 +383,6 @@ export type Database = {
           affiliate_html?: string | null
           background_color?: string | null
           banner_url?: string | null
-          cloner_allowed_plans?: string[]
           custom_css?: string | null
           favicon_url?: string | null
           id?: string
