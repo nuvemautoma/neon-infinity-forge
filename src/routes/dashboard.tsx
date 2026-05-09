@@ -61,9 +61,6 @@ function DashboardPage() {
       setMustChangePassword(!!(profile as any)?.must_change_password);
       loadAccounts(profile?.plan || "basic");
 
-      const { data: settings } = await supabase.from("site_settings").select("support_whatsapp").limit(1).maybeSingle();
-      setSupportWhatsapp((settings as any)?.support_whatsapp || "");
-    };
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
