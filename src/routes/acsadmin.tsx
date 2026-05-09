@@ -804,7 +804,7 @@ function AdminAffiliates() {
 }
 
 function AdminSettings() {
-  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", support_whatsapp: "", support_email: "" });
+  const [settings, setSettings] = useState<any>({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", support_whatsapp: "", support_email: "", cloner_allowed_plans: ["standard"] as string[] });
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -816,7 +816,12 @@ function AdminSettings() {
       background_color: data.background_color || "#0B0F19",
       support_whatsapp: (data as any).support_whatsapp || "",
       support_email: (data as any).support_email || "",
+      cloner_allowed_plans: (data as any).cloner_allowed_plans || ["standard"],
     });
+  };
+  const togglePlan = (p: string) => {
+    const cur: string[] = settings.cloner_allowed_plans || [];
+    setSettings({ ...settings, cloner_allowed_plans: cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p] });
   };
   const save = async () => {
     const { data: existing } = await supabase.from("site_settings").select("id").limit(1).single();
@@ -855,6 +860,19 @@ function AdminSettings() {
             <input type="color" value={(settings as any)[c.key]} onChange={(e) => setSettings({ ...settings, [c.key]: e.target.value })} className="w-10 h-10 rounded-xl border-0 cursor-pointer" />
           </div>
         ))}
+
+        <div className="pt-2 border-t border-border">
+          <label className="text-sm font-semibold text-foreground mb-2 block">Clonador de páginas — planos com acesso</label>
+          <p className="text-xs text-muted-foreground mb-3">Selecione quais planos podem usar o Clonador de Páginas (admin sempre tem acesso).</p>
+          <div className="flex flex-wrap gap-2">
+            {(["basic","plus","standard"] as const).map((p) => {
+              const active = (settings.cloner_allowed_plans || []).includes(p);
+              return (
+                <button key={p} type="button" onClick={() => togglePlan(p)} className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${active ? "bg-primary text-primary-foreground border-primary" : "bg-transparent text-muted-foreground border-border"}`}>{p}</button>
+              );
+            })}
+          </div>
+        </div>
 
         <button onClick={save} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">Salvar alterações</button>
       </div>

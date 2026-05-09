@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, LogOut, User, LayoutGrid, Calendar as CalendarIcon, Wrench } from "lucide-react";
+import { Search, LogOut, User, LayoutGrid, Calendar as CalendarIcon, Wrench, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { AccountCard } from "@/components/AccountCard";
@@ -47,6 +47,7 @@ function DashboardPage() {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [clonerAllowed, setClonerAllowed] = useState(false);
   
 
   useEffect(() => {
@@ -57,9 +58,19 @@ function DashboardPage() {
         return;
       }
       const { data: profile } = await supabase.from("profiles").select("plan, full_name, email, must_change_password").eq("id", authUser.id).single();
-      setUser({ id: authUser.id, email: authUser.email, full_name: profile?.full_name ?? undefined, plan: profile?.plan || "basic" });
+      const userPlan = profile?.plan || "basic";
+      setUser({ id: authUser.id, email: authUser.email, full_name: profile?.full_name ?? undefined, plan: userPlan });
       setMustChangePassword(!!(profile as any)?.must_change_password);
-      loadAccounts(profile?.plan || "basic");
+
+      const [{ data: settings }, { data: roles }] = await Promise.all([
+        supabase.from("site_settings").select("cloner_allowed_plans").maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", authUser.id),
+      ]);
+      const isAdmin = (roles || []).some((r) => r.role === "admin");
+      const planList = (settings as any)?.cloner_allowed_plans || ["standard"];
+      setClonerAllowed(isAdmin || planList.includes(userPlan));
+
+      loadAccounts(userPlan);
     };
     checkAuth();
 
@@ -220,10 +231,28 @@ function DashboardPage() {
           </section>
         )}
 
+        {/* CTA Clonador */}
+        {clonerAllowed && (
+          <Link
+            to="/cloner"
+            className="mt-14 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow">
+                <Globe className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Clonador de Páginas</h3>
+                <p className="text-sm text-muted-foreground">Cole uma URL, edite tudo visualmente (textos, cores, botões, animações) e baixe a página pronta em um único arquivo.</p>
+              </div>
+            </div>
+          </Link>
+        )}
+
         {/* CTA Agenda */}
         <Link
           to="/agenda"
-          className="mt-14 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
+          className="mt-6 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow">
