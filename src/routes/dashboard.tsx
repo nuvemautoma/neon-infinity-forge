@@ -117,6 +117,16 @@ function DashboardPage() {
           </nav>
 
           <div className="flex items-center gap-2">
+            {supportWhatsapp && (
+              <a
+                href={`https://wa.me/${supportWhatsapp.replace(/\D/g, "")}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 text-green-400 hover:bg-green-500/25 transition-colors text-xs font-semibold"
+                title="Suporte via WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4" /> <span className="hidden sm:inline">Suporte</span>
+              </a>
+            )}
             <NotificationBell />
             <div className="hidden sm:flex items-center gap-2 glass rounded-xl px-3 py-2">
               <User className="w-4 h-4 text-primary" />
@@ -129,6 +139,7 @@ function DashboardPage() {
           </div>
         </div>
       </header>
+
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
@@ -192,6 +203,14 @@ function DashboardPage() {
         isOpen={!!selectedAccount}
         onClose={() => setSelectedAccount(null)}
       />
+
+      {user?.id && (
+        <ForcePasswordChangeModal
+          open={mustChangePassword}
+          userId={user.id}
+          onChanged={() => setMustChangePassword(false)}
+        />
+      )}
     </div>
   );
 }
