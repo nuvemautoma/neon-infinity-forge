@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import landingHtml from "@/landing-content.html?raw";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
@@ -15,7 +14,7 @@ function LandingPage() {
   return (
     <iframe
       title="Landing Page"
-      srcDoc={landingHtml}
+      src="/landing.html"
       sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation-by-user-activation"
       className="w-screen h-screen border-0 block"
     />
