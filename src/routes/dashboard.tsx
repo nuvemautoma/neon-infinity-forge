@@ -34,6 +34,7 @@ interface Account {
   delivery_type?: string;
   unlimited_stock?: boolean;
   allowed_plans?: string[];
+  kind?: string;
 }
 
 function DashboardPage() {
