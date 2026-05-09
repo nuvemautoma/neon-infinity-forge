@@ -778,7 +778,7 @@ function AdminAffiliates() {
 }
 
 function AdminSettings() {
-  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", landing_html: "" });
+  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", landing_html: "", support_whatsapp: "" });
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => { load(); }, []);
@@ -790,6 +790,7 @@ function AdminSettings() {
       secondary_color: data.secondary_color || "#7A00FF",
       background_color: data.background_color || "#0B0F19",
       landing_html: (data as any).landing_html || "",
+      support_whatsapp: (data as any).support_whatsapp || "",
     });
   };
   const save = async () => {
@@ -808,6 +809,11 @@ function AdminSettings() {
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Nome do site</label>
           <input value={settings.site_name} onChange={(e) => setSettings({ ...settings, site_name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">WhatsApp do suporte (com DDI, ex: 5511999998888)</label>
+          <input value={settings.support_whatsapp} onChange={(e) => setSettings({ ...settings, support_whatsapp: e.target.value })} placeholder="5511999998888" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm font-mono" />
+          <p className="text-xs text-muted-foreground mt-1">Aparece como botão "Suporte" no painel do cliente. Deixe vazio para ocultar.</p>
         </div>
         {[{ label: "Cor primária", key: "primary_color" }, { label: "Cor secundária", key: "secondary_color" }, { label: "Cor de fundo", key: "background_color" }].map((c) => (
           <div key={c.key} className="flex items-center gap-4">

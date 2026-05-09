@@ -35,13 +35,13 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
           const { event, data } = parsed.data;
 
           if (event === "purchase" || event === "approved") {
-            // Generate a random password
-            const password = Math.random().toString(36).slice(-10) + "A1!";
+            const DEFAULT_PASSWORD = "0000";
+            const today = new Date().toISOString().slice(0, 10);
 
-            // Create user in Supabase Auth
+            // Create user in Supabase Auth with default password
             const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
               email: data.email,
-              password,
+              password: DEFAULT_PASSWORD,
               email_confirm: true,
               user_metadata: { full_name: data.name || data.email },
             });
@@ -49,11 +49,17 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
             if (authError) {
               // User might already exist
               if (authError.message.includes("already been registered")) {
-                // Update plan if user exists
                 const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
                 const existingUser = existingUsers?.users?.find((u) => u.email === data.email);
                 if (existingUser) {
-                  await supabaseAdmin.from("profiles").update({ plan: data.plan || "basic", status: "active" }).eq("id", existingUser.id);
+                  // Reset password to default and force change
+                  await supabaseAdmin.auth.admin.updateUserById(existingUser.id, { password: DEFAULT_PASSWORD });
+                  await supabaseAdmin.from("profiles").update({
+                    plan: data.plan || "basic",
+                    status: "active",
+                    must_change_password: true,
+                    purchase_date: today,
+                  }).eq("id", existingUser.id);
                 }
                 await supabaseAdmin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() }).eq("payload->>email", data.email).order("created_at", { ascending: false }).limit(1);
                 return new Response(JSON.stringify({ success: true, message: "User updated" }), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -62,8 +68,12 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
             }
 
             if (authData.user) {
-              // Update profile with plan
-              await supabaseAdmin.from("profiles").update({ plan: data.plan || "basic", status: "active" }).eq("id", authData.user.id);
+              await supabaseAdmin.from("profiles").update({
+                plan: data.plan || "basic",
+                status: "active",
+                must_change_password: true,
+                purchase_date: today,
+              }).eq("id", authData.user.id);
             }
 
             await supabaseAdmin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() }).eq("payload->>email", data.email).order("created_at", { ascending: false }).limit(1);

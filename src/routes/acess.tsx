@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
+import { resetPasswordWithPurchase } from "@/lib/password-reset.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/acess")({
@@ -22,6 +24,9 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isReset, setIsReset] = useState(false);
+  const [purchaseDate, setPurchaseDate] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const resetFn = useServerFn(resetPasswordWithPurchase);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,19 +43,20 @@ function LoginPage() {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !purchaseDate || !newPassword) { toast.error("Preencha todos os campos"); return; }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error("Erro ao enviar email de recuperação");
-    } else {
-      toast.success("Email de recuperação enviado!");
+    try {
+      await resetFn({ data: { email, purchaseDate, newPassword } });
+      toast.success("Senha alterada! Faça login com a nova senha.");
       setIsReset(false);
+      setPassword(""); setNewPassword(""); setPurchaseDate("");
+    } catch (err: any) {
+      toast.error(err?.message || "Não foi possível alterar a senha");
+    } finally {
+      setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
@@ -73,26 +79,38 @@ function LoginPage() {
 
         {isReset ? (
           <form onSubmit={handleReset} className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center mb-4">Digite seu email para recuperar a senha</p>
+            <p className="text-sm text-muted-foreground text-center mb-4">Informe o email da compra e a data exata da compra para definir uma nova senha.</p>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Email</label>
+              <label className="text-xs text-muted-foreground mb-1 block">Email da compra</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                placeholder="seu@email.com"
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground"
+                placeholder="seu@email.com" required
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Data da compra</label>
+              <input
+                type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground"
                 required
               />
             </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Nova senha</label>
+              <input
+                type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground"
+                placeholder="Mínimo 4 caracteres" minLength={4} required
+              />
+            </div>
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full gradient-neon py-3 rounded-xl font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50 neon-glow"
+              type="submit" disabled={loading}
+              className="w-full gradient-neon py-3 rounded-xl font-semibold text-primary-foreground neon-glow disabled:opacity-50"
             >
-              {loading ? "Enviando..." : "Enviar email"}
+              {loading ? "Validando..." : "Alterar senha"}
             </button>
-            <button type="button" onClick={() => setIsReset(false)} className="w-full text-sm text-muted-foreground hover:text-primary transition-colors">
+            <button type="button" onClick={() => setIsReset(false)} className="w-full text-sm text-muted-foreground hover:text-primary">
               Voltar ao login
             </button>
           </form>

@@ -215,7 +215,9 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          must_change_password: boolean
           plan: string
+          purchase_date: string | null
           status: string
           updated_at: string
         }
@@ -225,7 +227,9 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          must_change_password?: boolean
           plan?: string
+          purchase_date?: string | null
           status?: string
           updated_at?: string
         }
@@ -235,7 +239,9 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          must_change_password?: boolean
           plan?: string
+          purchase_date?: string | null
           status?: string
           updated_at?: string
         }
@@ -254,6 +260,7 @@ export type Database = {
           primary_color: string | null
           secondary_color: string | null
           site_name: string | null
+          support_whatsapp: string | null
           updated_at: string
         }
         Insert: {
@@ -268,6 +275,7 @@ export type Database = {
           primary_color?: string | null
           secondary_color?: string | null
           site_name?: string | null
+          support_whatsapp?: string | null
           updated_at?: string
         }
         Update: {
@@ -282,6 +290,7 @@ export type Database = {
           primary_color?: string | null
           secondary_color?: string | null
           site_name?: string | null
+          support_whatsapp?: string | null
           updated_at?: string
         }
         Relationships: []
