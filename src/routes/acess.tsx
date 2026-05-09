@@ -66,6 +66,7 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      <Toaster position="top-right" theme="dark" richColors />
       {/* Aurora background */}
       <div className="absolute inset-0 bg-aurora pointer-events-none" />
       {/* Animated grid */}
