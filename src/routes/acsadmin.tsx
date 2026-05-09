@@ -804,7 +804,7 @@ function AdminAffiliates() {
 }
 
 function AdminSettings() {
-  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", support_whatsapp: "", support_email: "" });
+  const [settings, setSettings] = useState<any>({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", support_whatsapp: "", support_email: "", cloner_allowed_plans: ["standard"] as string[] });
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -816,7 +816,12 @@ function AdminSettings() {
       background_color: data.background_color || "#0B0F19",
       support_whatsapp: (data as any).support_whatsapp || "",
       support_email: (data as any).support_email || "",
+      cloner_allowed_plans: (data as any).cloner_allowed_plans || ["standard"],
     });
+  };
+  const togglePlan = (p: string) => {
+    const cur: string[] = settings.cloner_allowed_plans || [];
+    setSettings({ ...settings, cloner_allowed_plans: cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p] });
   };
   const save = async () => {
     const { data: existing } = await supabase.from("site_settings").select("id").limit(1).single();
