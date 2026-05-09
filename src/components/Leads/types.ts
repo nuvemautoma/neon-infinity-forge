@@ -46,11 +46,22 @@ export const TAG_COLORS = [
 export const COLUMN_COLORS = TAG_COLORS;
 
 export const NICHE_SUGGESTIONS = [
-  "restaurante", "bar", "cafe", "lanchonete", "padaria", "mercado",
-  "farmacia", "clinica", "dentista", "barbearia", "salao", "academia",
-  "petshop", "veterinario", "hotel", "pousada", "oficina", "posto",
-  "loja", "roupas", "moveis", "eletronicos", "contabilidade", "advogado",
-  "imobiliaria",
+  "Restaurante", "Bar", "Café", "Lanchonete", "Pizzaria", "Padaria", "Mercado", "Hortifruti",
+  "Farmácia", "Clínica médica", "Dentista", "Psicólogo", "Fisioterapeuta",
+  "Barbearia", "Salão de beleza", "Estética", "Manicure", "Academia", "Estúdio de pilates",
+  "Petshop", "Veterinário", "Hotel", "Pousada", "Airbnb",
+  "Oficina mecânica", "Posto de gasolina", "Lava-rápido", "Auto elétrica",
+  "Loja de roupas", "Loja de calçados", "Loja de móveis", "Loja de eletrônicos", "Ótica",
+  "Contabilidade", "Advogado", "Imobiliária", "Corretor de seguros",
+  "Construtora", "Material de construção", "Marcenaria", "Serralheria",
+  "Escola", "Curso de idiomas", "Curso técnico", "Auto-escola",
+  "Buffet", "Festas e eventos", "Fotógrafo", "Gráfica",
+];
+
+export const COUNTRIES = [
+  "Brasil", "Portugal", "Estados Unidos", "Argentina", "Uruguai", "Paraguai", "Chile",
+  "Colômbia", "México", "Espanha", "França", "Itália", "Alemanha", "Reino Unido",
+  "Canadá", "Japão", "Austrália",
 ];
 
 export const BR_STATES = [
