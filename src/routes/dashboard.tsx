@@ -47,7 +47,7 @@ function DashboardPage() {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
-  const [supportWhatsapp, setSupportWhatsapp] = useState<string>("");
+  
 
   useEffect(() => {
     const checkAuth = async () => {
