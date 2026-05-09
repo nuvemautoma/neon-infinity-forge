@@ -160,30 +160,33 @@ const emptyForm = {
   delivery_type: "shared", unlimited_stock: false, allowed_plans: ["basic", "plus", "standard"] as string[],
 };
 
-function AdminAccounts() {
+function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
+  const isTool = kind === "tool";
+  const labelSingular = isTool ? "Ferramenta" : "Produto";
+  const labelPlural = isTool ? "Ferramentas Exclusivas" : "Produtos";
   const [accounts, setAccounts] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [kind]);
 
   const load = async () => {
-    const { data } = await supabase.from("accounts").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("accounts").select("*").eq("kind", kind).order("created_at", { ascending: false });
     setAccounts(data || []);
   };
 
   const save = async () => {
     if (!form.name) { toast.error("Nome obrigatório"); return; }
-    const payload = { ...form, unlimited_stock: form.delivery_type === "individual" ? false : form.unlimited_stock };
+    const payload = { ...form, kind, unlimited_stock: form.delivery_type === "individual" ? false : form.unlimited_stock };
     if (editId) {
       const { error } = await supabase.from("accounts").update(payload).eq("id", editId);
       if (error) { toast.error(error.message); return; }
-      toast.success("Produto atualizado!");
+      toast.success(`${labelSingular} atualizado!`);
     } else {
       const { error } = await supabase.from("accounts").insert(payload);
       if (error) { toast.error(error.message); return; }
-      toast.success("Produto criado!");
+      toast.success(`${labelSingular} criado!`);
     }
     setShowForm(false);
     setEditId(null);
@@ -192,9 +195,9 @@ function AdminAccounts() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Excluir este produto?")) return;
+    if (!confirm(`Excluir esta(e) ${labelSingular.toLowerCase()}?`)) return;
     await supabase.from("accounts").delete().eq("id", id);
-    toast.success("Produto removido!");
+    toast.success(`${labelSingular} removido!`);
     load();
   };
 
