@@ -222,9 +222,9 @@ function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
+        <h1 className="text-2xl font-bold text-foreground">{labelPlural}</h1>
         <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...emptyForm }); }} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground flex items-center gap-2 neon-glow">
-          <Plus className="w-4 h-4" /> Novo Produto
+          <Plus className="w-4 h-4" /> Novo(a) {labelSingular}
         </button>
       </div>
 
