@@ -1,0 +1,7 @@
+UPDATE public.site_settings
+SET landing_html = REPLACE(
+  landing_html,
+  '</body>',
+  E'<style id="planos-fix-final">\n/* Força largura total no heading "Escolha o seu plano" (anula .elementor-widget__width-initial) */\n#planos-section .elementor-element-0e73293,\n#planos-section .elementor-widget__width-initial { width: 100% !important; max-width: 100% !important; align-self: auto !important; }\n#planos-section .elementor-element-0e73293 .elementor-widget-container,\n#planos-section .elementor-element-0e73293 .elementor-heading-title { text-align: center !important; }\n\n/* Centraliza horizontalmente o bloco do preço (R$ + 37,90) */\n#planos-section .elementor-element-2b1e833 { justify-content: center !important; align-items: baseline !important; gap: 10px !important; width: 100% !important; }\n#planos-section .elementor-element-2b1e833 .elementor-widget { width: auto !important; max-width: none !important; }\n\n/* Garante que o card único fique centralizado */\n#planos-section .elementor-element-07016ab { display: flex !important; justify-content: center !important; grid-template-columns: none !important; width: 100% !important; }\n#planos-section .elementor-element-cd6a2c5 { margin: 0 auto !important; max-width: 520px; width: 100%; }\n</style>\n</body>'
+)
+WHERE landing_html LIKE '%</body>%' AND landing_html NOT LIKE '%planos-fix-final%';
