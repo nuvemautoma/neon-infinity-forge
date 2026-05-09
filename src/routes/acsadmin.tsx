@@ -558,7 +558,7 @@ function AdminNotifications() {
   const send = async () => {
     if (!title || !message) { toast.error("Título e mensagem obrigatórios"); return; }
     setSending(true);
-    const { data, error } = await supabase.rpc("broadcast_notification", { _title: title, _message: message, _plan: plan || null });
+    const { data, error } = await supabase.rpc("broadcast_notification", { _title: title, _message: message, _plan: plan || undefined });
     setSending(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Enviada para ${data} usuário(s)!`);
