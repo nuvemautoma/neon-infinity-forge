@@ -46,7 +46,14 @@ function LandingPage() {
   }, []);
 
   if (loaded && customHtml) {
-    return <div className="min-h-screen bg-background" dangerouslySetInnerHTML={{ __html: customHtml }} />;
+    return (
+      <iframe
+        title="Landing Page"
+        srcDoc={customHtml}
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation-by-user-activation"
+        className="w-screen h-screen border-0 block"
+      />
+    );
   }
 
   return (
