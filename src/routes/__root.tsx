@@ -86,23 +86,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/601ac5b4-c502-4572-b669-c2126dbbc7bf/id-preview-ecad9d16--1ce9af4d-a38e-4e60-afc9-88d8f3fe3269.lovable.app-1778297601853.png" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      {
-        rel: "preconnect",
-        href: "https://fonts.googleapis.com",
-      },
-      {
-        rel: "preconnect",
-        href: "https://fonts.gstatic.com",
-        crossOrigin: "anonymous",
-      },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap",
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", href: "/icon-192.png" },
+      { rel: "apple-touch-icon", href: "/icon-192.png" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" },
     ],
   }),
   shellComponent: RootShell,
@@ -127,6 +117,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    const isPreview = location.hostname.includes("id-preview--") || location.hostname.includes("lovableproject.com");
+    if (!isPreview) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

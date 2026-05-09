@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Package, Users, Share2, Settings, LogOut, Plus, Pencil, Trash2, Eye, EyeOff, Star, Inbox, Bell, AlertTriangle, Boxes, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Package, Users, Share2, Settings, LogOut, Plus, Pencil, Trash2, Eye, EyeOff, Star, Inbox, Bell, AlertTriangle, Boxes, ShieldAlert, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { HtmlAiPanel } from "@/components/HtmlAiPanel";
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/acsadmin")({
   head: () => ({ meta: [{ title: "Admin — Infinity I.A" }] }),
 });
 
-type Tab = "dashboard" | "accounts" | "stock" | "urgency" | "support" | "notifications" | "plans" | "users" | "affiliates" | "settings" | "danger";
+type Tab = "dashboard" | "accounts" | "tools" | "stock" | "urgency" | "support" | "notifications" | "plans" | "users" | "affiliates" | "settings" | "danger";
 
 const PLAN_OPTIONS = ["basic", "plus", "standard"] as const;
 
@@ -39,6 +39,7 @@ function AdminPanel() {
   const sidebarItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "accounts", label: "Produtos", icon: Package },
+    { id: "tools", label: "Ferramentas Excl.", icon: Wrench },
     { id: "stock", label: "Estoque", icon: Boxes },
     { id: "urgency", label: "Urgência", icon: AlertTriangle },
     { id: "support", label: "Solicitações", icon: Inbox },
@@ -88,7 +89,8 @@ function AdminPanel() {
         </select>
 
         {tab === "dashboard" && <AdminDashboard />}
-        {tab === "accounts" && <AdminAccounts />}
+        {tab === "accounts" && <AdminAccounts kind="account" />}
+        {tab === "tools" && <AdminAccounts kind="tool" />}
         {tab === "stock" && <AdminStock />}
         {tab === "urgency" && <AdminUrgency />}
         {tab === "support" && <AdminSupport />}
@@ -158,30 +160,33 @@ const emptyForm = {
   delivery_type: "shared", unlimited_stock: false, allowed_plans: ["basic", "plus", "standard"] as string[],
 };
 
-function AdminAccounts() {
+function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
+  const isTool = kind === "tool";
+  const labelSingular = isTool ? "Ferramenta" : "Produto";
+  const labelPlural = isTool ? "Ferramentas Exclusivas" : "Produtos";
   const [accounts, setAccounts] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [kind]);
 
   const load = async () => {
-    const { data } = await supabase.from("accounts").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase.from("accounts").select("*").eq("kind", kind).order("created_at", { ascending: false });
     setAccounts(data || []);
   };
 
   const save = async () => {
     if (!form.name) { toast.error("Nome obrigatório"); return; }
-    const payload = { ...form, unlimited_stock: form.delivery_type === "individual" ? false : form.unlimited_stock };
+    const payload = { ...form, kind, unlimited_stock: form.delivery_type === "individual" ? false : form.unlimited_stock };
     if (editId) {
       const { error } = await supabase.from("accounts").update(payload).eq("id", editId);
       if (error) { toast.error(error.message); return; }
-      toast.success("Produto atualizado!");
+      toast.success(`${labelSingular} atualizado!`);
     } else {
       const { error } = await supabase.from("accounts").insert(payload);
       if (error) { toast.error(error.message); return; }
-      toast.success("Produto criado!");
+      toast.success(`${labelSingular} criado!`);
     }
     setShowForm(false);
     setEditId(null);
@@ -190,9 +195,9 @@ function AdminAccounts() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Excluir este produto?")) return;
+    if (!confirm(`Excluir esta(e) ${labelSingular.toLowerCase()}?`)) return;
     await supabase.from("accounts").delete().eq("id", id);
-    toast.success("Produto removido!");
+    toast.success(`${labelSingular} removido!`);
     load();
   };
 
@@ -217,9 +222,9 @@ function AdminAccounts() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
+        <h1 className="text-2xl font-bold text-foreground">{labelPlural}</h1>
         <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...emptyForm }); }} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground flex items-center gap-2 neon-glow">
-          <Plus className="w-4 h-4" /> Novo Produto
+          <Plus className="w-4 h-4" /> Novo(a) {labelSingular}
         </button>
       </div>
 

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, LogOut, User, LayoutGrid, MessageCircle } from "lucide-react";
+import { Search, LogOut, User, LayoutGrid, MessageCircle, Calendar as CalendarIcon, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { AccountCard } from "@/components/AccountCard";
@@ -34,12 +34,14 @@ interface Account {
   delivery_type?: string;
   unlimited_stock?: boolean;
   allowed_plans?: string[];
+  kind?: string;
 }
 
 function DashboardPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ id?: string; email?: string; full_name?: string; plan?: string } | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [tools, setTools] = useState<Account[]>([]);
   const [search, setSearch] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,8 @@ function DashboardPage() {
     } else {
       const all = (data as unknown as Account[]) || [];
       const allowed = all.filter((a) => !a.allowed_plans || a.allowed_plans.length === 0 || a.allowed_plans.includes(plan));
-      setAccounts(allowed);
+      setAccounts(allowed.filter((a) => (a.kind ?? "account") === "account"));
+      setTools(allowed.filter((a) => a.kind === "tool"));
     }
   };
 
@@ -93,11 +96,11 @@ function DashboardPage() {
     navigate({ to: "/acess" });
   };
 
-  const filtered = accounts.filter(
-    (a) =>
-      a.name.toLowerCase().includes(search.toLowerCase()) ||
-      a.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const matches = (a: Account) =>
+    a.name.toLowerCase().includes(search.toLowerCase()) ||
+    a.category.toLowerCase().includes(search.toLowerCase());
+  const filtered = accounts.filter(matches);
+  const filteredTools = tools.filter(matches);
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,7 +116,7 @@ function DashboardPage() {
 
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/dashboard" className="text-sm font-medium text-primary">Dashboard</Link>
-            <Link to="/affiliate" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Afiliar-me</Link>
+            <Link to="/agenda" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Agenda</Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -191,11 +194,51 @@ function DashboardPage() {
         </div>
 
         {!loading && filtered.length === 0 && (
-          <div className="text-center py-20">
+          <div className="text-center py-12">
             <LayoutGrid className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Nenhuma conta encontrada.</p>
           </div>
         )}
+
+        {/* Ferramentas Exclusivas */}
+        {!loading && tools.length > 0 && (
+          <section className="mt-14">
+            <div className="flex items-center gap-3 mb-2">
+              <Wrench className="w-5 h-5 text-primary" />
+              <h2 className="text-2xl font-bold text-foreground">Ferramentas Exclusivas</h2>
+            </div>
+            <p className="text-muted-foreground mb-6 text-sm">Acessos premium liberados para o seu plano.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTools.map((account, i) => (
+                <AccountCard
+                  key={account.id}
+                  name={account.name}
+                  category={account.category}
+                  status={account.status}
+                  imageUrl={account.image_url ?? undefined}
+                  onClick={() => setSelectedAccount(account)}
+                  index={i}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* CTA Agenda */}
+        <Link
+          to="/agenda"
+          className="mt-14 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow">
+              <CalendarIcon className="w-7 h-7 text-primary-foreground" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Sua Agenda Inteligente</h3>
+              <p className="text-sm text-muted-foreground">Cadastre rotinas, ative notificações e receba um lembrete 30 minutos antes de cada compromisso.</p>
+            </div>
+          </div>
+        </Link>
       </main>
 
       <AccountDetailModal
