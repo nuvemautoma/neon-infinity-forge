@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
+import { resetPasswordWithPurchase } from "@/lib/password-reset.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/acess")({
@@ -22,6 +24,9 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isReset, setIsReset] = useState(false);
+  const [purchaseDate, setPurchaseDate] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const resetFn = useServerFn(resetPasswordWithPurchase);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,19 +43,20 @@ function LoginPage() {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !purchaseDate || !newPassword) { toast.error("Preencha todos os campos"); return; }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error("Erro ao enviar email de recuperação");
-    } else {
-      toast.success("Email de recuperação enviado!");
+    try {
+      await resetFn({ data: { email, purchaseDate, newPassword } });
+      toast.success("Senha alterada! Faça login com a nova senha.");
       setIsReset(false);
+      setPassword(""); setNewPassword(""); setPurchaseDate("");
+    } catch (err: any) {
+      toast.error(err?.message || "Não foi possível alterar a senha");
+    } finally {
+      setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
