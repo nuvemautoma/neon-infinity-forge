@@ -869,6 +869,21 @@ function AdminSettings() {
           onResult={(html) => setSettings((s) => ({ ...s, landing_html: html }))}
         />
       </div>
+
+      {visualOpen && (
+        <GrapesEditor
+          title="Editor Visual — Landing Page"
+          initialHtml={settings.landing_html}
+          onClose={() => setVisualOpen(false)}
+          onSave={async (html) => {
+            setSettings((s) => ({ ...s, landing_html: html }));
+            const { data: existing } = await supabase.from("site_settings").select("id").limit(1).single();
+            if (!existing) throw new Error("Configurações não encontradas");
+            const { error } = await supabase.from("site_settings").update({ landing_html: html } as any).eq("id", existing.id);
+            if (error) throw error;
+          }}
+        />
+      )}
     </div>
   );
 }
