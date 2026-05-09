@@ -810,6 +810,11 @@ function AdminSettings() {
           <label className="text-xs text-muted-foreground mb-1 block">Nome do site</label>
           <input value={settings.site_name} onChange={(e) => setSettings({ ...settings, site_name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
         </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">WhatsApp do suporte (com DDI, ex: 5511999998888)</label>
+          <input value={settings.support_whatsapp} onChange={(e) => setSettings({ ...settings, support_whatsapp: e.target.value })} placeholder="5511999998888" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm font-mono" />
+          <p className="text-xs text-muted-foreground mt-1">Aparece como botão "Suporte" no painel do cliente. Deixe vazio para ocultar.</p>
+        </div>
         {[{ label: "Cor primária", key: "primary_color" }, { label: "Cor secundária", key: "secondary_color" }, { label: "Cor de fundo", key: "background_color" }].map((c) => (
           <div key={c.key} className="flex items-center gap-4">
             <div>
