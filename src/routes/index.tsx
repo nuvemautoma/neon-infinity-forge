@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Shield, Zap, Link2, RefreshCw, Headphones, Check } from "lucide-react";
 import { InfinityLogo } from "@/components/InfinityLogo";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,
@@ -21,6 +23,32 @@ const features = [
 ];
 
 function LandingPage() {
+  const [customHtml, setCustomHtml] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from("site_settings").select("landing_html").limit(1).maybeSingle();
+      setCustomHtml(data?.landing_html?.trim() || null);
+      setLoaded(true);
+    };
+    load();
+
+    const channel = supabase
+      .channel("site_settings_landing")
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, (payload: any) => {
+        const html = payload.new?.landing_html?.trim() || null;
+        setCustomHtml(html);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  if (loaded && customHtml) {
+    return <div className="min-h-screen bg-background" dangerouslySetInnerHTML={{ __html: customHtml }} />;
+  }
+
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <div className="fixed inset-0 pointer-events-none">
