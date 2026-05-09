@@ -116,7 +116,7 @@ function DashboardPage() {
 
           <nav className="hidden md:flex items-center gap-6">
             <Link to="/dashboard" className="text-sm font-medium text-primary">Dashboard</Link>
-            <Link to="/affiliate" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Afiliar-me</Link>
+            <Link to="/agenda" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Agenda</Link>
           </nav>
 
           <div className="flex items-center gap-2">
