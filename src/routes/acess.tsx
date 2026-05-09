@@ -33,17 +33,18 @@ function LoginPage() {
     if (!email || !password) return;
     setLoading(true);
     const { error, data } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       const msg = error.message?.toLowerCase() || "";
       if (msg.includes("invalid")) toast.error("Email ou senha incorretos");
       else if (msg.includes("confirm")) toast.error("Confirme seu email antes de entrar");
       else toast.error(error.message || "Não foi possível entrar");
-    } else if (data.session) {
-      // aguarda persistir a sessão antes de redirecionar
-      await supabase.auth.getSession();
-      window.location.href = "/dashboard";
+      return;
     }
+    toast.success("Login realizado!");
+    // garante que a sessão persistiu antes de navegar
+    await supabase.auth.getSession();
+    window.location.replace("/dashboard");
   };
 
   const handleReset = async (e: React.FormEvent) => {
