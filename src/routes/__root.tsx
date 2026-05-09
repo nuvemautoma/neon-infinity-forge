@@ -75,11 +75,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Infinity I.A — Acesso Premium" },
       { name: "description", content: "Plataforma premium de entrega de contas Plus" },
       { name: "author", content: "Infinity I.A" },
-      { property: "og:title", content: "Infinity I.A" },
+      { property: "og:title", content: "Infinity I.A — Acesso Premium" },
       { property: "og:description", content: "Plataforma premium de entrega de contas Plus" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Infinity I.A — Acesso Premium" },
+      { name: "twitter:description", content: "Plataforma premium de entrega de contas Plus" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/601ac5b4-c502-4572-b669-c2126dbbc7bf/id-preview-ecad9d16--1ce9af4d-a38e-4e60-afc9-88d8f3fe3269.lovable.app-1778297601853.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/601ac5b4-c502-4572-b669-c2126dbbc7bf/id-preview-ecad9d16--1ce9af4d-a38e-4e60-afc9-88d8f3fe3269.lovable.app-1778297601853.png" },
     ],
     links: [
       {
