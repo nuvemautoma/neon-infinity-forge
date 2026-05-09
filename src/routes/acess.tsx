@@ -79,26 +79,38 @@ function LoginPage() {
 
         {isReset ? (
           <form onSubmit={handleReset} className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center mb-4">Digite seu email para recuperar a senha</p>
+            <p className="text-sm text-muted-foreground text-center mb-4">Informe o email da compra e a data exata da compra para definir uma nova senha.</p>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Email</label>
+              <label className="text-xs text-muted-foreground mb-1 block">Email da compra</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                placeholder="seu@email.com"
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground"
+                placeholder="seu@email.com" required
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Data da compra</label>
+              <input
+                type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground"
                 required
               />
             </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Nova senha</label>
+              <input
+                type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground"
+                placeholder="Mínimo 4 caracteres" minLength={4} required
+              />
+            </div>
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full gradient-neon py-3 rounded-xl font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:opacity-50 neon-glow"
+              type="submit" disabled={loading}
+              className="w-full gradient-neon py-3 rounded-xl font-semibold text-primary-foreground neon-glow disabled:opacity-50"
             >
-              {loading ? "Enviando..." : "Enviar email"}
+              {loading ? "Validando..." : "Alterar senha"}
             </button>
-            <button type="button" onClick={() => setIsReset(false)} className="w-full text-sm text-muted-foreground hover:text-primary transition-colors">
+            <button type="button" onClick={() => setIsReset(false)} className="w-full text-sm text-muted-foreground hover:text-primary">
               Voltar ao login
             </button>
           </form>
