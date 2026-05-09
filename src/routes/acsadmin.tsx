@@ -5,6 +5,7 @@ import { LayoutDashboard, Package, Users, Share2, Settings, LogOut, Plus, Pencil
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { HtmlAiPanel } from "@/components/HtmlAiPanel";
+import { GrapesEditor } from "@/components/GrapesEditor";
 import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/acsadmin")({
@@ -697,6 +698,7 @@ function AdminAffiliates() {
   const [affiliateHtml, setAffiliateHtml] = useState("");
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [visualOpen, setVisualOpen] = useState(false);
 
   useEffect(() => { load(); loadHtml(); }, []);
   const load = async () => { const { data } = await supabase.from("affiliate_links").select("*").order("sort_order"); setLinks(data || []); };
@@ -754,8 +756,15 @@ function AdminAffiliates() {
       </div>
 
       <div className="glass rounded-2xl p-6 space-y-4 max-w-4xl">
-        <h2 className="text-lg font-bold text-foreground">HTML customizado da página /afiliados</h2>
-        <p className="text-xs text-muted-foreground">Quando preenchido, substitui a página padrão de afiliados em tempo real.</p>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-lg font-bold text-foreground">HTML customizado da página /afiliados</h2>
+            <p className="text-xs text-muted-foreground">Quando preenchido, substitui a página padrão de afiliados em tempo real.</p>
+          </div>
+          <button onClick={() => setVisualOpen(true)} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow">
+            🎨 Abrir editor visual (drag & drop)
+          </button>
+        </div>
         <textarea value={affiliateHtml} onChange={(e) => setAffiliateHtml(e.target.value)} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-80 resize-y" />
         <div>
           <p className="text-xs text-muted-foreground mb-2">Preview ao vivo:</p>
@@ -771,6 +780,20 @@ function AdminAffiliates() {
           onResult={(html) => setAffiliateHtml(html)}
         />
       </div>
+
+      {visualOpen && (
+        <GrapesEditor
+          title="Editor Visual — Página de Afiliados"
+          initialHtml={affiliateHtml}
+          onClose={() => setVisualOpen(false)}
+          onSave={async (html) => {
+            setAffiliateHtml(html);
+            if (!settingsId) { toast.error("Configurações não encontradas"); return; }
+            const { error } = await supabase.from("site_settings").update({ affiliate_html: html } as any).eq("id", settingsId);
+            if (error) throw error;
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -778,6 +801,7 @@ function AdminAffiliates() {
 function AdminSettings() {
   const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", landing_html: "", support_whatsapp: "" });
   const [showPreview, setShowPreview] = useState(false);
+  const [visualOpen, setVisualOpen] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -824,7 +848,12 @@ function AdminSettings() {
         ))}
 
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
+            <label className="text-xs text-muted-foreground block">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
+            <button onClick={() => setVisualOpen(true)} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow">
+              🎨 Abrir editor visual (drag & drop)
+            </button>
+          </div>
           <textarea value={settings.landing_html} onChange={(e) => setSettings({ ...settings, landing_html: e.target.value })} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-96 resize-y" />
           <p className="text-xs text-muted-foreground mt-3 mb-2">Preview ao vivo:</p>
           <div className="rounded-xl overflow-hidden border border-border bg-black">
@@ -840,6 +869,21 @@ function AdminSettings() {
           onResult={(html) => setSettings((s) => ({ ...s, landing_html: html }))}
         />
       </div>
+
+      {visualOpen && (
+        <GrapesEditor
+          title="Editor Visual — Landing Page"
+          initialHtml={settings.landing_html}
+          onClose={() => setVisualOpen(false)}
+          onSave={async (html) => {
+            setSettings((s) => ({ ...s, landing_html: html }));
+            const { data: existing } = await supabase.from("site_settings").select("id").limit(1).single();
+            if (!existing) throw new Error("Configurações não encontradas");
+            const { error } = await supabase.from("site_settings").update({ landing_html: html } as any).eq("id", existing.id);
+            if (error) throw error;
+          }}
+        />
+      )}
     </div>
   );
 }
