@@ -89,7 +89,8 @@ function AdminPanel() {
         </select>
 
         {tab === "dashboard" && <AdminDashboard />}
-        {tab === "accounts" && <AdminAccounts />}
+        {tab === "accounts" && <AdminAccounts kind="account" />}
+        {tab === "tools" && <AdminAccounts kind="tool" />}
         {tab === "stock" && <AdminStock />}
         {tab === "urgency" && <AdminUrgency />}
         {tab === "support" && <AdminSupport />}
