@@ -86,7 +86,8 @@ function DashboardPage() {
     } else {
       const all = (data as unknown as Account[]) || [];
       const allowed = all.filter((a) => !a.allowed_plans || a.allowed_plans.length === 0 || a.allowed_plans.includes(plan));
-      setAccounts(allowed);
+      setAccounts(allowed.filter((a) => (a.kind ?? "account") === "account"));
+      setTools(allowed.filter((a) => a.kind === "tool"));
     }
   };
 
