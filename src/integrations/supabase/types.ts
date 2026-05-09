@@ -41,10 +41,53 @@ export type Database = {
         }
         Relationships: []
       }
+      account_stock_items: {
+        Row: {
+          account_id: string
+          content: string
+          created_at: string
+          delivered_at: string | null
+          delivered_to: string | null
+          delivered_to_email: string | null
+          id: string
+          is_used: boolean
+        }
+        Insert: {
+          account_id: string
+          content: string
+          created_at?: string
+          delivered_at?: string | null
+          delivered_to?: string | null
+          delivered_to_email?: string | null
+          id?: string
+          is_used?: boolean
+        }
+        Update: {
+          account_id?: string
+          content?: string
+          created_at?: string
+          delivered_at?: string | null
+          delivered_to?: string | null
+          delivered_to_email?: string | null
+          id?: string
+          is_used?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_stock_items_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
+          allowed_plans: string[]
           category: string
           created_at: string
+          delivery_type: string
           email: string | null
           extra_links: Json | null
           id: string
@@ -57,11 +100,14 @@ export type Database = {
           password: string | null
           sort_order: number | null
           status: string
+          unlimited_stock: boolean
           updated_at: string
         }
         Insert: {
+          allowed_plans?: string[]
           category?: string
           created_at?: string
+          delivery_type?: string
           email?: string | null
           extra_links?: Json | null
           id?: string
@@ -74,11 +120,14 @@ export type Database = {
           password?: string | null
           sort_order?: number | null
           status?: string
+          unlimited_stock?: boolean
           updated_at?: string
         }
         Update: {
+          allowed_plans?: string[]
           category?: string
           created_at?: string
+          delivery_type?: string
           email?: string | null
           extra_links?: Json | null
           id?: string
@@ -91,6 +140,7 @@ export type Database = {
           password?: string | null
           sort_order?: number | null
           status?: string
+          unlimited_stock?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -128,6 +178,33 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           sort_order?: number | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -205,6 +282,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      support_requests: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          created_at: string
+          id: string
+          message: string
+          resolved_at: string | null
+          status: string
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          resolved_at?: string | null
+          status?: string
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          resolved_at?: string | null
+          status?: string
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_requests_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
