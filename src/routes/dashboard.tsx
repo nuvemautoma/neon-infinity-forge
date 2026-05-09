@@ -231,10 +231,28 @@ function DashboardPage() {
           </section>
         )}
 
+        {/* CTA Clonador */}
+        {clonerAllowed && (
+          <Link
+            to="/cloner"
+            className="mt-14 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow">
+                <Globe className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Clonador de Páginas</h3>
+                <p className="text-sm text-muted-foreground">Cole uma URL, edite tudo visualmente (textos, cores, botões, animações) e baixe a página pronta em um único arquivo.</p>
+              </div>
+            </div>
+          </Link>
+        )}
+
         {/* CTA Agenda */}
         <Link
           to="/agenda"
-          className="mt-14 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
+          className="mt-6 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow">
