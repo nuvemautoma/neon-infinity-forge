@@ -6,7 +6,7 @@ import { Eye, EyeOff, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { resetPasswordWithPurchase } from "@/lib/password-reset.functions";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/acess")({
   component: LoginPage,
@@ -33,17 +33,18 @@ function LoginPage() {
     if (!email || !password) return;
     setLoading(true);
     const { error, data } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       const msg = error.message?.toLowerCase() || "";
       if (msg.includes("invalid")) toast.error("Email ou senha incorretos");
       else if (msg.includes("confirm")) toast.error("Confirme seu email antes de entrar");
       else toast.error(error.message || "Não foi possível entrar");
-    } else if (data.session) {
-      // aguarda persistir a sessão antes de redirecionar
-      await supabase.auth.getSession();
-      window.location.href = "/dashboard";
+      return;
     }
+    toast.success("Login realizado!");
+    // garante que a sessão persistiu antes de navegar
+    await supabase.auth.getSession();
+    window.location.replace("/dashboard");
   };
 
   const handleReset = async (e: React.FormEvent) => {
@@ -65,6 +66,7 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      <Toaster position="top-right" theme="dark" richColors />
       {/* Aurora background */}
       <div className="absolute inset-0 bg-aurora pointer-events-none" />
       {/* Animated grid */}

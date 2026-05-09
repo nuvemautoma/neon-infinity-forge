@@ -7,7 +7,8 @@ import { InfinityLogo } from "@/components/InfinityLogo";
 import { FloatingSupportButton } from "@/components/FloatingSupportButton";
 import { extractLeads } from "@/lib/leads-extract.functions";
 import type { LeadResult } from "@/lib/leads-extract.functions";
-import { NICHE_SUGGESTIONS, BR_STATES } from "@/components/Leads/types";
+import { NICHE_SUGGESTIONS, BR_STATES, COUNTRIES } from "@/components/Leads/types";
+import { Combobox } from "@/components/Leads/Combobox";
 import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/leads/extrair")({
@@ -117,35 +118,33 @@ function ExtractPage() {
 
         <form onSubmit={onSearch} className="glass rounded-2xl p-5 md:p-6 mb-6 space-y-5 border border-border">
           <div>
-            <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">📍 Onde buscar</div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">🎯 O que você quer prospectar</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block">País</label>
-                <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
+                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Nicho</span> <span className="text-muted-foreground">(escolha ou digite)</span></label>
+                <Combobox value={form.niche} onChange={(v) => setForm({ ...form, niche: v })} options={NICHE_SUGGESTIONS} placeholder="Ex: Restaurante, Barbearia…" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block">Estado</label>
-                <input list="states" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} placeholder="Ex: São Paulo" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
-                <datalist id="states">{BR_STATES.map((s) => <option key={s.uf} value={s.name} />)}</datalist>
-              </div>
-              <div>
-                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Cidade</span> <span className="text-destructive">*</span></label>
-                <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required placeholder="Ex: Campinas" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
+                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Nome do comércio</span> <span className="text-muted-foreground">(opcional)</span></label>
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Filtrar por nome específico" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
               </div>
             </div>
           </div>
 
           <div>
-            <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">🎯 O que buscar</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-3">📍 Onde buscar</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Nicho</span> <span className="text-muted-foreground">(o que vende)</span></label>
-                <input list="niches" value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="restaurante, barbearia, academia…" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
-                <datalist id="niches">{NICHE_SUGGESTIONS.map((n) => <option key={n} value={n} />)}</datalist>
+                <label className="text-xs text-muted-foreground mb-1.5 block">País</label>
+                <Combobox value={form.country} onChange={(v) => setForm({ ...form, country: v })} options={COUNTRIES} placeholder="Selecione o país" />
               </div>
               <div>
-                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Nome</span> <span className="text-muted-foreground">(opcional)</span></label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Filtrar por nome do comércio" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
+                <label className="text-xs text-muted-foreground mb-1.5 block">Estado {form.country === "Brasil" ? "" : "(opcional)"}</label>
+                <Combobox value={form.state} onChange={(v) => setForm({ ...form, state: v })} options={form.country === "Brasil" ? BR_STATES.map((s) => s.name) : []} placeholder="Ex: São Paulo" />
+              </div>
+              <div>
+                <label className="text-xs mb-1.5 block"><span className="text-foreground font-semibold">Cidade</span> <span className="text-destructive">*</span></label>
+                <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required placeholder="Ex: Campinas" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors" />
               </div>
             </div>
           </div>
