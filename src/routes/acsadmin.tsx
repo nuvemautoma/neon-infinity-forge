@@ -848,7 +848,12 @@ function AdminSettings() {
         ))}
 
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
+            <label className="text-xs text-muted-foreground block">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
+            <button onClick={() => setVisualOpen(true)} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow">
+              🎨 Abrir editor visual (drag & drop)
+            </button>
+          </div>
           <textarea value={settings.landing_html} onChange={(e) => setSettings({ ...settings, landing_html: e.target.value })} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-96 resize-y" />
           <p className="text-xs text-muted-foreground mt-3 mb-2">Preview ao vivo:</p>
           <div className="rounded-xl overflow-hidden border border-border bg-black">
