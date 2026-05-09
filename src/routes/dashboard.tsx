@@ -194,11 +194,51 @@ function DashboardPage() {
         </div>
 
         {!loading && filtered.length === 0 && (
-          <div className="text-center py-20">
+          <div className="text-center py-12">
             <LayoutGrid className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Nenhuma conta encontrada.</p>
           </div>
         )}
+
+        {/* Ferramentas Exclusivas */}
+        {!loading && tools.length > 0 && (
+          <section className="mt-14">
+            <div className="flex items-center gap-3 mb-2">
+              <Wrench className="w-5 h-5 text-primary" />
+              <h2 className="text-2xl font-bold text-foreground">Ferramentas Exclusivas</h2>
+            </div>
+            <p className="text-muted-foreground mb-6 text-sm">Acessos premium liberados para o seu plano.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTools.map((account, i) => (
+                <AccountCard
+                  key={account.id}
+                  name={account.name}
+                  category={account.category}
+                  status={account.status}
+                  imageUrl={account.image_url ?? undefined}
+                  onClick={() => setSelectedAccount(account)}
+                  index={i}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* CTA Agenda */}
+        <Link
+          to="/agenda"
+          className="mt-14 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow">
+              <CalendarIcon className="w-7 h-7 text-primary-foreground" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Sua Agenda Inteligente</h3>
+              <p className="text-sm text-muted-foreground">Cadastre rotinas, ative notificações e receba um lembrete 30 minutos antes de cada compromisso.</p>
+            </div>
+          </div>
+        </Link>
       </main>
 
       <AccountDetailModal
