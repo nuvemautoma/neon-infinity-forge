@@ -755,8 +755,15 @@ function AdminAffiliates() {
       </div>
 
       <div className="glass rounded-2xl p-6 space-y-4 max-w-4xl">
-        <h2 className="text-lg font-bold text-foreground">HTML customizado da página /afiliados</h2>
-        <p className="text-xs text-muted-foreground">Quando preenchido, substitui a página padrão de afiliados em tempo real.</p>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-lg font-bold text-foreground">HTML customizado da página /afiliados</h2>
+            <p className="text-xs text-muted-foreground">Quando preenchido, substitui a página padrão de afiliados em tempo real.</p>
+          </div>
+          <button onClick={() => setVisualOpen(true)} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow">
+            🎨 Abrir editor visual (drag & drop)
+          </button>
+        </div>
         <textarea value={affiliateHtml} onChange={(e) => setAffiliateHtml(e.target.value)} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-80 resize-y" />
         <div>
           <p className="text-xs text-muted-foreground mb-2">Preview ao vivo:</p>
@@ -772,6 +779,20 @@ function AdminAffiliates() {
           onResult={(html) => setAffiliateHtml(html)}
         />
       </div>
+
+      {visualOpen && (
+        <GrapesEditor
+          title="Editor Visual — Página de Afiliados"
+          initialHtml={affiliateHtml}
+          onClose={() => setVisualOpen(false)}
+          onSave={async (html) => {
+            setAffiliateHtml(html);
+            if (!settingsId) { toast.error("Configurações não encontradas"); return; }
+            const { error } = await supabase.from("site_settings").update({ affiliate_html: html } as any).eq("id", settingsId);
+            if (error) throw error;
+          }}
+        />
+      )}
     </div>
   );
 }
