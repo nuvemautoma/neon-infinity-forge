@@ -245,6 +245,8 @@ function DashboardPage() {
           onChanged={() => setMustChangePassword(false)}
         />
       )}
+
+      <FloatingSupportButton />
     </div>
   );
 }
