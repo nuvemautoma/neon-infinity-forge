@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, ExternalLink, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { X, Copy, ExternalLink, Eye, EyeOff, AlertTriangle, Send } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AccountDetail {
   id: string;
@@ -14,6 +15,8 @@ interface AccountDetail {
   observations?: string;
   image_url?: string;
   status: string;
+  delivery_type?: string;
+  unlimited_stock?: boolean;
 }
 
 interface AccountDetailModalProps {
@@ -24,10 +27,66 @@ interface AccountDetailModalProps {
 
 export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailModalProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [delivered, setDelivered] = useState<string | null>(null);
+  const [loadingDelivery, setLoadingDelivery] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
+  const [supportMsg, setSupportMsg] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const isIndividual = account?.delivery_type === "individual";
+
+  useEffect(() => {
+    setShowSupport(false);
+    setSupportMsg("");
+    setDelivered(null);
+    if (!account || !isOpen) return;
+    if (isIndividual) {
+      claimItem();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account?.id, isOpen]);
+
+  const claimItem = async () => {
+    if (!account) return;
+    setLoadingDelivery(true);
+    const { data, error } = await supabase.rpc("claim_stock_item", { _account_id: account.id });
+    setLoadingDelivery(false);
+    if (error) {
+      toast.error("Não foi possível obter o acesso: " + error.message);
+      return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.content) {
+      setDelivered(row.content);
+    } else {
+      setDelivered(null);
+    }
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado!`);
+  };
+
+  const submitSupport = async () => {
+    if (!account) return;
+    if (!supportMsg.trim()) { toast.error("Descreva o problema"); return; }
+    if (supportMsg.length > 900) { toast.error("Máx. 900 caracteres"); return; }
+    setSending(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSending(false); return; }
+    const { error } = await supabase.from("support_requests").insert({
+      user_id: user.id,
+      user_email: user.email,
+      account_id: account.id,
+      account_name: account.name,
+      message: supportMsg.trim(),
+    });
+    setSending(false);
+    if (error) { toast.error("Erro ao enviar"); return; }
+    toast.success("Solicitação enviada! Você será notificado quando for resolvida.");
+    setSupportMsg("");
+    setShowSupport(false);
   };
 
   if (!account) return null;
@@ -49,7 +108,7 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="glass-strong rounded-3xl p-8 w-full max-w-lg relative z-10 neon-glow"
+            className="glass-strong rounded-3xl p-8 w-full max-w-lg relative z-10 neon-glow max-h-[90vh] overflow-y-auto"
           >
             <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-accent transition-colors">
               <X className="w-5 h-5 text-muted-foreground" />
@@ -67,71 +126,119 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
                 <h2 className="text-xl font-bold text-foreground">{account.name}</h2>
                 <p className="text-sm text-muted-foreground">{account.category}</p>
               </div>
-              <span className={`ml-auto px-3 py-1 rounded-full text-xs font-medium ${account.status === "active" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
-                {account.status === "active" ? "Disponível" : "Indisponível"}
-              </span>
             </div>
 
-            <div className="space-y-4">
-              {account.email && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="text-sm text-foreground">{account.email}</p>
+            {/* Acesso individual entregue */}
+            {isIndividual && (
+              <div className="mb-4">
+                {loadingDelivery ? (
+                  <div className="p-4 rounded-xl bg-accent/50 text-sm text-muted-foreground">Carregando seu acesso...</div>
+                ) : delivered ? (
+                  <div className="p-4 rounded-xl bg-primary/10 border border-primary/30">
+                    <p className="text-xs text-primary mb-1">🎯 Seu acesso exclusivo</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm text-foreground break-all flex-1">{delivered}</p>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => copyToClipboard(delivered, "Acesso")} className="p-2 rounded-lg hover:bg-accent transition-colors">
+                          <Copy className="w-4 h-4 text-primary" />
+                        </button>
+                        {delivered.startsWith("http") && (
+                          <a href={delivered} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-accent transition-colors">
+                            <ExternalLink className="w-4 h-4 text-primary" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <button onClick={() => copyToClipboard(account.email!, "Email")} className="p-2 rounded-lg hover:bg-accent transition-colors">
-                    <Copy className="w-4 h-4 text-primary" />
-                  </button>
-                </div>
-              )}
+                ) : (
+                  <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-sm text-yellow-300">
+                    Estoque esgotado no momento. O admin foi notificado.
+                  </div>
+                )}
+              </div>
+            )}
 
-              {account.password && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Senha</p>
-                    <p className="text-sm text-foreground font-mono">{showPassword ? account.password : "••••••••••"}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => setShowPassword(!showPassword)} className="p-2 rounded-lg hover:bg-accent transition-colors">
-                      {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-                    </button>
-                    <button onClick={() => copyToClipboard(account.password!, "Senha")} className="p-2 rounded-lg hover:bg-accent transition-colors">
+            {/* Compartilhado: credenciais comuns */}
+            {!isIndividual && (
+              <div className="space-y-4">
+                {account.email && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <p className="text-sm text-foreground">{account.email}</p>
+                    </div>
+                    <button onClick={() => copyToClipboard(account.email!, "Email")} className="p-2 rounded-lg hover:bg-accent transition-colors">
                       <Copy className="w-4 h-4 text-primary" />
                     </button>
                   </div>
-                </div>
-              )}
+                )}
 
-              {account.main_link && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-muted-foreground">Link principal</p>
-                    <p className="text-sm text-primary truncate">{account.main_link}</p>
-                  </div>
-                  <a href={account.main_link} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-accent transition-colors shrink-0">
-                    <ExternalLink className="w-4 h-4 text-primary" />
-                  </a>
-                </div>
-              )}
-
-              {account.extra_links && account.extra_links.length > 0 && (
-                <div className="p-3 rounded-xl bg-accent/50">
-                  <p className="text-xs text-muted-foreground mb-2">Links extras</p>
-                  {account.extra_links.map((link, i) => (
-                    <div key={i} className="flex items-center justify-between py-1">
-                      <p className="text-sm text-primary truncate">{link.url}</p>
-                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="p-1 rounded hover:bg-accent transition-colors shrink-0">
-                        <ExternalLink className="w-3 h-3 text-primary" />
-                      </a>
+                {account.password && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Senha</p>
+                      <p className="text-sm text-foreground font-mono">{showPassword ? account.password : "••••••••••"}</p>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="flex gap-1">
+                      <button onClick={() => setShowPassword(!showPassword)} className="p-2 rounded-lg hover:bg-accent transition-colors">
+                        {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                      </button>
+                      <button onClick={() => copyToClipboard(account.password!, "Senha")} className="p-2 rounded-lg hover:bg-accent transition-colors">
+                        <Copy className="w-4 h-4 text-primary" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-              {account.observations && (
-                <div className="p-3 rounded-xl bg-accent/50">
-                  <p className="text-xs text-muted-foreground">Observações</p>
-                  <p className="text-sm text-foreground mt-1">{account.observations}</p>
+                {account.main_link && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">Link principal</p>
+                      <p className="text-sm text-primary truncate">{account.main_link}</p>
+                    </div>
+                    <a href={account.main_link} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-accent transition-colors shrink-0">
+                      <ExternalLink className="w-4 h-4 text-primary" />
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {account.observations && (
+              <div className="p-3 rounded-xl bg-accent/50 mt-4">
+                <p className="text-xs text-muted-foreground">Observações</p>
+                <p className="text-sm text-foreground mt-1">{account.observations}</p>
+              </div>
+            )}
+
+            {/* Botão de solicitação */}
+            <div className="mt-6 pt-6 border-t border-border">
+              {!showSupport ? (
+                <button
+                  onClick={() => setShowSupport(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/20 transition-colors text-sm font-medium"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Erros ou link cheio? Solicite aqui
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <textarea
+                    value={supportMsg}
+                    onChange={(e) => setSupportMsg(e.target.value.slice(0, 900))}
+                    placeholder="Descreva o problema (link cheio, erro de acesso, etc.)..."
+                    className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm h-28 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">{supportMsg.length}/900</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setShowSupport(false); setSupportMsg(""); }} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border">Cancelar</button>
+                      <button onClick={submitSupport} disabled={sending} className="gradient-neon px-5 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow flex items-center gap-2 disabled:opacity-50">
+                        <Send className="w-4 h-4" />
+                        {sending ? "Enviando..." : "Enviar"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
