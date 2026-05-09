@@ -51,7 +51,7 @@ function DashboardPage() {
         return;
       }
       const { data: profile } = await supabase.from("profiles").select("plan, full_name, email").eq("id", authUser.id).single();
-      setUser({ email: authUser.email, full_name: profile?.full_name, plan: profile?.plan || "basic" });
+      setUser({ email: authUser.email, full_name: profile?.full_name ?? undefined, plan: profile?.plan || "basic" });
       loadAccounts(profile?.plan || "basic");
     };
     checkAuth();
