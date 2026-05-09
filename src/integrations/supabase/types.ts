@@ -380,12 +380,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_clear_all_stock: { Args: never; Returns: undefined }
+      admin_delete_all_accounts: { Args: never; Returns: undefined }
+      broadcast_notification: {
+        Args: { _message: string; _plan?: string; _title: string }
+        Returns: number
+      }
+      claim_stock_item: {
+        Args: { _account_id: string }
+        Returns: {
+          already_had: boolean
+          content: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      resolve_support_request: {
+        Args: { _request_id: string }
+        Returns: undefined
       }
     }
     Enums: {
