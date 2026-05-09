@@ -799,9 +799,7 @@ function AdminAffiliates() {
 }
 
 function AdminSettings() {
-  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", landing_html: "", support_whatsapp: "" });
-  const [showPreview, setShowPreview] = useState(false);
-  const [visualOpen, setVisualOpen] = useState(false);
+  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", support_whatsapp: "" });
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -811,7 +809,6 @@ function AdminSettings() {
       primary_color: data.primary_color || "#00B4FF",
       secondary_color: data.secondary_color || "#7A00FF",
       background_color: data.background_color || "#0B0F19",
-      landing_html: (data as any).landing_html || "",
       support_whatsapp: (data as any).support_whatsapp || "",
     });
   };
