@@ -861,6 +861,19 @@ function AdminSettings() {
           </div>
         ))}
 
+        <div className="pt-2 border-t border-border">
+          <label className="text-sm font-semibold text-foreground mb-2 block">Clonador de páginas — planos com acesso</label>
+          <p className="text-xs text-muted-foreground mb-3">Selecione quais planos podem usar o Clonador de Páginas (admin sempre tem acesso).</p>
+          <div className="flex flex-wrap gap-2">
+            {(["basic","plus","standard"] as const).map((p) => {
+              const active = (settings.cloner_allowed_plans || []).includes(p);
+              return (
+                <button key={p} type="button" onClick={() => togglePlan(p)} className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${active ? "bg-primary text-primary-foreground border-primary" : "bg-transparent text-muted-foreground border-border"}`}>{p}</button>
+              );
+            })}
+          </div>
+        </div>
+
         <button onClick={save} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">Salvar alterações</button>
       </div>
     </div>
