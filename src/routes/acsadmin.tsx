@@ -804,7 +804,7 @@ function AdminAffiliates() {
 }
 
 function AdminSettings() {
-  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", support_whatsapp: "" });
+  const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", support_whatsapp: "", support_email: "" });
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -815,6 +815,7 @@ function AdminSettings() {
       secondary_color: data.secondary_color || "#7A00FF",
       background_color: data.background_color || "#0B0F19",
       support_whatsapp: (data as any).support_whatsapp || "",
+      support_email: (data as any).support_email || "",
     });
   };
   const save = async () => {
@@ -823,7 +824,7 @@ function AdminSettings() {
       const { error } = await supabase.from("site_settings").update(settings).eq("id", existing.id);
       if (error) { toast.error(error.message); return; }
     }
-    toast.success("Configurações salvas! A landing foi atualizada em tempo real.");
+    toast.success("Configurações salvas!");
   };
 
   return (
@@ -834,11 +835,17 @@ function AdminSettings() {
           <label className="text-xs text-muted-foreground mb-1 block">Nome do site</label>
           <input value={settings.site_name} onChange={(e) => setSettings({ ...settings, site_name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">WhatsApp do suporte (com DDI, ex: 5511999998888)</label>
-          <input value={settings.support_whatsapp} onChange={(e) => setSettings({ ...settings, support_whatsapp: e.target.value })} placeholder="5511999998888" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm font-mono" />
-          <p className="text-xs text-muted-foreground mt-1">Aparece como botão "Suporte" no painel do cliente. Deixe vazio para ocultar.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">WhatsApp do suporte (com DDI)</label>
+            <input value={settings.support_whatsapp} onChange={(e) => setSettings({ ...settings, support_whatsapp: e.target.value })} placeholder="5511999998888" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm font-mono" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">E-mail do suporte</label>
+            <input type="email" value={settings.support_email} onChange={(e) => setSettings({ ...settings, support_email: e.target.value })} placeholder="suporte@seusite.com" className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
+          </div>
         </div>
+        <p className="text-xs text-muted-foreground -mt-3">O botão flutuante de suporte usa o WhatsApp; se vazio, usa o e-mail. Deixe os dois vazios para ocultar.</p>
         {[{ label: "Cor primária", key: "primary_color" }, { label: "Cor secundária", key: "secondary_color" }, { label: "Cor de fundo", key: "background_color" }].map((c) => (
           <div key={c.key} className="flex items-center gap-4">
             <div>
