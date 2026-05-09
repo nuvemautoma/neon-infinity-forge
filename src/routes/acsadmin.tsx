@@ -754,17 +754,15 @@ function AdminAffiliates() {
       </div>
 
       <div className="glass rounded-2xl p-6 space-y-4 max-w-4xl">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-foreground">HTML customizado da página /afiliados</h2>
-          <button onClick={() => setShowPreview((v) => !v)} className="text-xs text-primary hover:underline">{showPreview ? "Ocultar" : "Visualizar"} preview</button>
-        </div>
+        <h2 className="text-lg font-bold text-foreground">HTML customizado da página /afiliados</h2>
         <p className="text-xs text-muted-foreground">Quando preenchido, substitui a página padrão de afiliados em tempo real.</p>
         <textarea value={affiliateHtml} onChange={(e) => setAffiliateHtml(e.target.value)} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-80 resize-y" />
-        {showPreview && affiliateHtml && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-2">Preview ao vivo:</p>
           <div className="rounded-xl overflow-hidden border border-border bg-black">
-            <iframe title="Preview Afiliados" srcDoc={affiliateHtml} sandbox="allow-same-origin" className="w-full h-[500px] border-0" />
+            <iframe title="Preview Afiliados" srcDoc={affiliateHtml || "<html><body style='font-family:sans-serif;color:#888;display:flex;align-items:center;justify-content:center;height:100vh;background:#0b0f19'>Cole o HTML acima para ver o preview</body></html>"} sandbox="allow-same-origin" className="w-full h-[500px] border-0 bg-white" />
           </div>
-        )}
+        </div>
         <button onClick={saveHtml} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">Salvar HTML de afiliados</button>
 
         <HtmlAiPanel
@@ -826,16 +824,12 @@ function AdminSettings() {
         ))}
 
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-muted-foreground block">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
-            <button onClick={() => setShowPreview((v) => !v)} className="text-xs text-primary hover:underline">{showPreview ? "Ocultar" : "Visualizar"} preview</button>
-          </div>
+          <label className="text-xs text-muted-foreground block mb-1">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
           <textarea value={settings.landing_html} onChange={(e) => setSettings({ ...settings, landing_html: e.target.value })} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-96 resize-y" />
-          {showPreview && settings.landing_html && (
-            <div className="mt-3 rounded-xl overflow-hidden border border-border bg-black">
-              <iframe title="Preview" srcDoc={settings.landing_html} sandbox="allow-same-origin" className="w-full h-[500px] border-0" />
-            </div>
-          )}
+          <p className="text-xs text-muted-foreground mt-3 mb-2">Preview ao vivo:</p>
+          <div className="rounded-xl overflow-hidden border border-border bg-black">
+            <iframe title="Preview Landing" srcDoc={settings.landing_html || "<html><body style='font-family:sans-serif;color:#888;display:flex;align-items:center;justify-content:center;height:100vh;background:#0b0f19'>Cole o HTML acima para ver o preview</body></html>"} sandbox="allow-same-origin" className="w-full h-[500px] border-0 bg-white" />
+          </div>
         </div>
 
         <button onClick={save} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">Salvar alterações</button>
