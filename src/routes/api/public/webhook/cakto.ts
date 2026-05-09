@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
                 const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
                 const existingUser = existingUsers?.users?.find((u) => u.email === data.email);
                 if (existingUser) {
-                  await supabaseAdmin.from("profiles").update({ plan: data.plan || "premium", status: "active" }).eq("id", existingUser.id);
+                  await supabaseAdmin.from("profiles").update({ plan: data.plan || "basic", status: "active" }).eq("id", existingUser.id);
                 }
                 await supabaseAdmin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() }).eq("payload->>email", data.email).order("created_at", { ascending: false }).limit(1);
                 return new Response(JSON.stringify({ success: true, message: "User updated" }), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -63,7 +63,7 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
 
             if (authData.user) {
               // Update profile with plan
-              await supabaseAdmin.from("profiles").update({ plan: data.plan || "premium", status: "active" }).eq("id", authData.user.id);
+              await supabaseAdmin.from("profiles").update({ plan: data.plan || "basic", status: "active" }).eq("id", authData.user.id);
             }
 
             await supabaseAdmin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() }).eq("payload->>email", data.email).order("created_at", { ascending: false }).limit(1);
