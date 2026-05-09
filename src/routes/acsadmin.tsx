@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { LayoutDashboard, Package, Users, Share2, Settings, LogOut, Plus, Pencil, Trash2, Eye, EyeOff, Star, Inbox, Bell, AlertTriangle, Boxes, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
+import { HtmlAiPanel } from "@/components/HtmlAiPanel";
 import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/acsadmin")({
@@ -742,6 +743,7 @@ function AdminAffiliates() {
 
 function AdminSettings() {
   const [settings, setSettings] = useState({ site_name: "", primary_color: "#00B4FF", secondary_color: "#7A00FF", background_color: "#0B0F19", landing_html: "" });
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -756,14 +758,17 @@ function AdminSettings() {
   };
   const save = async () => {
     const { data: existing } = await supabase.from("site_settings").select("id").limit(1).single();
-    if (existing) await supabase.from("site_settings").update(settings).eq("id", existing.id);
-    toast.success("Configurações salvas!");
+    if (existing) {
+      const { error } = await supabase.from("site_settings").update(settings).eq("id", existing.id);
+      if (error) { toast.error(error.message); return; }
+    }
+    toast.success("Configurações salvas! A landing foi atualizada em tempo real.");
   };
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-foreground mb-6">Personalização</h1>
-      <div className="glass rounded-2xl p-6 space-y-6 max-w-3xl">
+      <div className="glass rounded-2xl p-6 space-y-6 max-w-4xl">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Nome do site</label>
           <input value={settings.site_name} onChange={(e) => setSettings({ ...settings, site_name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
@@ -777,11 +782,27 @@ function AdminSettings() {
             <input type="color" value={(settings as any)[c.key]} onChange={(e) => setSettings({ ...settings, [c.key]: e.target.value })} className="w-10 h-10 rounded-xl border-0 cursor-pointer" />
           </div>
         ))}
+
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-muted-foreground block">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
+            <button onClick={() => setShowPreview((v) => !v)} className="text-xs text-primary hover:underline">{showPreview ? "Ocultar" : "Visualizar"} preview</button>
+          </div>
           <textarea value={settings.landing_html} onChange={(e) => setSettings({ ...settings, landing_html: e.target.value })} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-96 resize-y" />
+          {showPreview && settings.landing_html && (
+            <div className="mt-3 rounded-xl overflow-hidden border border-border bg-black">
+              <iframe title="Preview" srcDoc={settings.landing_html} sandbox="allow-same-origin" className="w-full h-[500px] border-0" />
+            </div>
+          )}
         </div>
+
         <button onClick={save} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">Salvar alterações</button>
+
+        <HtmlAiPanel
+          label="IA — Editora da Landing Page"
+          currentHtml={settings.landing_html}
+          onResult={(html) => setSettings((s) => ({ ...s, landing_html: html }))}
+        />
       </div>
     </div>
   );
