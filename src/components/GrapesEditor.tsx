@@ -24,7 +24,6 @@ export function GrapesEditor({ initialHtml, onSave, onClose, title = "Editor Vis
     (async () => {
       // Imports dinâmicos: GrapesJS é grande e usa window — só carrega no cliente
       const grapesjs = (await import("grapesjs")).default;
-      // @ts-expect-error sem types
       await import("grapesjs/dist/css/grapes.min.css");
       const presetWebpage = (await import("grapesjs-preset-webpage")).default;
       const blocksBasic = (await import("grapesjs-blocks-basic")).default;
