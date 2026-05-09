@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AcsadminRouteImport } from './routes/acsadmin'
 import { Route as AcessRouteImport } from './routes/acess'
 import { Route as IndexRouteImport } from './routes/index'
@@ -24,6 +25,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgendaRoute = AgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AcsadminRoute = AcsadminRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
+  '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
+  '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/acess': typeof AcessRoute
   '/acsadmin': typeof AcsadminRoute
+  '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acess'
     | '/acsadmin'
+    | '/agenda'
     | '/dashboard'
     | '/reset-password'
     | '/api/public/webhook/cakto'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acess'
     | '/acsadmin'
+    | '/agenda'
     | '/dashboard'
     | '/reset-password'
     | '/api/public/webhook/cakto'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acess'
     | '/acsadmin'
+    | '/agenda'
     | '/dashboard'
     | '/reset-password'
     | '/api/public/webhook/cakto'
@@ -103,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcessRoute: typeof AcessRoute
   AcsadminRoute: typeof AcsadminRoute
+  AgendaRoute: typeof AgendaRoute
   DashboardRoute: typeof DashboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicWebhookCaktoRoute: typeof ApiPublicWebhookCaktoRoute
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agenda': {
+      id: '/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AgendaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/acsadmin': {
@@ -159,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessRoute: AcessRoute,
   AcsadminRoute: AcsadminRoute,
+  AgendaRoute: AgendaRoute,
   DashboardRoute: DashboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicWebhookCaktoRoute: ApiPublicWebhookCaktoRoute,
@@ -166,3 +187,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
