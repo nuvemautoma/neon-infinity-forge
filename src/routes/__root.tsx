@@ -118,6 +118,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    const isPreview = location.hostname.includes("id-preview--") || location.hostname.includes("lovableproject.com");
+    if (!isPreview) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
