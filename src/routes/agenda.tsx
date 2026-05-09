@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Trash2, Bell, BellOff, Clock, Calendar as CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
+import { FloatingSupportButton } from "@/components/FloatingSupportButton";
 import {
   registerServiceWorker,
   requestNotificationPermission,
