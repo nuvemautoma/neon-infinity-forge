@@ -60,7 +60,7 @@ function DashboardPage() {
       setUser({ id: authUser.id, email: authUser.email, full_name: profile?.full_name ?? undefined, plan: profile?.plan || "basic" });
       setMustChangePassword(!!(profile as any)?.must_change_password);
       loadAccounts(profile?.plan || "basic");
-
+    };
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
