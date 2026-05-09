@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 const MAX_HTML_BYTES = 8 * 1024 * 1024;
@@ -141,7 +140,7 @@ async function firecrawlScrape(url: string): Promise<string | null> {
 const inputSchema = z.object({ url: z.string().url().max(2048) });
 
 export const clonePage = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  
   .inputValidator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data }) => {
     const url = data.url;
