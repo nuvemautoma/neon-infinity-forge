@@ -16,6 +16,7 @@ import { Route as AcsadminRouteImport } from './routes/acsadmin'
 import { Route as AcessRouteImport } from './routes/acess'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPublicWebhookCaktoRouteImport } from './routes/api/public/webhook/cakto'
+import { Route as ApiPublicHooksAgendaTickRouteImport } from './routes/api/public/hooks/agenda-tick'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -52,6 +53,12 @@ const ApiPublicWebhookCaktoRoute = ApiPublicWebhookCaktoRouteImport.update({
   path: '/api/public/webhook/cakto',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksAgendaTickRoute =
+  ApiPublicHooksAgendaTickRouteImport.update({
+    id: '/api/public/hooks/agenda-tick',
+    path: '/api/public/hooks/agenda-tick',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/hooks/agenda-tick': typeof ApiPublicHooksAgendaTickRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +77,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/hooks/agenda-tick': typeof ApiPublicHooksAgendaTickRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRoutesById {
@@ -79,6 +88,7 @@ export interface FileRoutesById {
   '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/hooks/agenda-tick': typeof ApiPublicHooksAgendaTickRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +100,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/dashboard'
     | '/reset-password'
+    | '/api/public/hooks/agenda-tick'
     | '/api/public/webhook/cakto'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +110,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/dashboard'
     | '/reset-password'
+    | '/api/public/hooks/agenda-tick'
     | '/api/public/webhook/cakto'
   id:
     | '__root__'
@@ -108,6 +120,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/dashboard'
     | '/reset-password'
+    | '/api/public/hooks/agenda-tick'
     | '/api/public/webhook/cakto'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +131,7 @@ export interface RootRouteChildren {
   AgendaRoute: typeof AgendaRoute
   DashboardRoute: typeof DashboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicHooksAgendaTickRoute: typeof ApiPublicHooksAgendaTickRoute
   ApiPublicWebhookCaktoRoute: typeof ApiPublicWebhookCaktoRoute
 }
 
@@ -172,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhookCaktoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/agenda-tick': {
+      id: '/api/public/hooks/agenda-tick'
+      path: '/api/public/hooks/agenda-tick'
+      fullPath: '/api/public/hooks/agenda-tick'
+      preLoaderRoute: typeof ApiPublicHooksAgendaTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -182,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaRoute: AgendaRoute,
   DashboardRoute: DashboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicHooksAgendaTickRoute: ApiPublicHooksAgendaTickRoute,
   ApiPublicWebhookCaktoRoute: ApiPublicWebhookCaktoRoute,
 }
 export const routeTree = rootRouteImport
