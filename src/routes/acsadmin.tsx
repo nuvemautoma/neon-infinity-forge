@@ -844,43 +844,8 @@ function AdminSettings() {
           </div>
         ))}
 
-        <div>
-          <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
-            <label className="text-xs text-muted-foreground block">HTML da Landing Page (rota /) — vazio usa landing padrão</label>
-            <button onClick={() => setVisualOpen(true)} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow">
-              🎨 Abrir editor visual (drag & drop)
-            </button>
-          </div>
-          <textarea value={settings.landing_html} onChange={(e) => setSettings({ ...settings, landing_html: e.target.value })} placeholder="<!DOCTYPE html>..." spellCheck={false} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-xs font-mono h-96 resize-y" />
-          <p className="text-xs text-muted-foreground mt-3 mb-2">Preview ao vivo:</p>
-          <div className="rounded-xl overflow-hidden border border-border bg-black">
-            <iframe title="Preview Landing" srcDoc={settings.landing_html || "<html><body style='font-family:sans-serif;color:#888;display:flex;align-items:center;justify-content:center;height:100vh;background:#0b0f19'>Cole o HTML acima para ver o preview</body></html>"} sandbox="allow-same-origin" className="w-full h-[500px] border-0 bg-white" />
-          </div>
-        </div>
-
         <button onClick={save} className="gradient-neon px-8 py-3 rounded-xl font-semibold text-primary-foreground neon-glow w-full">Salvar alterações</button>
-
-        <HtmlAiPanel
-          label="IA — Editora da Landing Page"
-          currentHtml={settings.landing_html}
-          onResult={(html) => setSettings((s) => ({ ...s, landing_html: html }))}
-        />
       </div>
-
-      {visualOpen && (
-        <GrapesEditor
-          title="Editor Visual — Landing Page"
-          initialHtml={settings.landing_html}
-          onClose={() => setVisualOpen(false)}
-          onSave={async (html) => {
-            setSettings((s) => ({ ...s, landing_html: html }));
-            const { data: existing } = await supabase.from("site_settings").select("id").limit(1).single();
-            if (!existing) throw new Error("Configurações não encontradas");
-            const { error } = await supabase.from("site_settings").update({ landing_html: html } as any).eq("id", existing.id);
-            if (error) throw error;
-          }}
-        />
-      )}
     </div>
   );
 }
