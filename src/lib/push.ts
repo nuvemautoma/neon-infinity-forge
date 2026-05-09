@@ -1,14 +1,5 @@
-// Chave VAPID pública — pode ficar no client, é assinatura de identificação
-export const VAPID_PUBLIC_KEY = "BKSV5JP0qRPTpXrtgvx6ZlebrkiDVGsTAczHeI76DC-A1MbL70YbYy1Dodk9e5ujvz82RrYVLfNvjPL1AjUF3Yc";
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  const out = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) out[i] = rawData.charCodeAt(i);
-  return out;
-}
+// Notificações locais nativas — sem servidor, sem VAPID.
+// Usa Notification API + Service Worker registrado para garantir suporte em mobile.
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return null;
@@ -20,28 +11,30 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 }
 
-export async function subscribePush(): Promise<{
-  endpoint: string;
-  p256dh: string;
-  auth: string;
-} | null> {
-  const reg = await registerServiceWorker();
-  if (!reg) return null;
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") return null;
-  const sub = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-  });
-  const json = sub.toJSON() as any;
-  return {
-    endpoint: sub.endpoint,
-    p256dh: json.keys?.p256dh,
-    auth: json.keys?.auth,
-  };
+export async function requestNotificationPermission(): Promise<NotificationPermission> {
+  if (typeof Notification === "undefined") return "denied";
+  if (Notification.permission === "granted") return "granted";
+  return await Notification.requestPermission();
 }
 
-export async function getPushPermission(): Promise<NotificationPermission> {
+export function getNotificationPermission(): NotificationPermission {
   if (typeof Notification === "undefined") return "denied";
   return Notification.permission;
+}
+
+export async function showLocalNotification(title: string, body: string, url = "/agenda") {
+  if (getNotificationPermission() !== "granted") return;
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (reg) {
+    reg.showNotification(title, {
+      body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      vibrate: [200, 100, 200],
+      data: { url },
+      tag: `agenda-${Date.now()}`,
+    } as NotificationOptions);
+  } else {
+    new Notification(title, { body, icon: "/icon-192.png" });
+  }
 }

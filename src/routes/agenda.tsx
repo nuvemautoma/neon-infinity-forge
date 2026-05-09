@@ -1,10 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Trash2, Bell, BellOff, Clock, Calendar as CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
-import { subscribePush, getPushPermission, registerServiceWorker } from "@/lib/push";
+import { FloatingSupportButton } from "@/components/FloatingSupportButton";
+import {
+  registerServiceWorker,
+  requestNotificationPermission,
+  getNotificationPermission,
+  showLocalNotification,
+} from "@/lib/push";
 import { toast, Toaster } from "sonner";
 
 export const Route = createFileRoute("/agenda")({
@@ -31,12 +37,17 @@ interface AgendaEvent {
   is_active: boolean;
 }
 
+// Calcula o próximo "now" em SP
+function nowSP(): Date {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+}
+
 function AgendaPage() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [events, setEvents] = useState<AgendaEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pushPerm, setPushPerm] = useState<NotificationPermission>("default");
+  const [perm, setPerm] = useState<NotificationPermission>("default");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -46,6 +57,7 @@ function AgendaPage() {
     repeat_count: 1,
     notify_enabled: true,
   });
+  const sentRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -53,10 +65,48 @@ function AgendaPage() {
       if (!user) { navigate({ to: "/acess" }); return; }
       setUserId(user.id);
       registerServiceWorker();
-      setPushPerm(await getPushPermission());
+      setPerm(getNotificationPermission());
       await load(user.id);
     })();
   }, [navigate]);
+
+  // Loop de checagem: a cada 30s, vê se algum evento começa em ~30min
+  useEffect(() => {
+    if (perm !== "granted" || events.length === 0) return;
+    const tick = () => {
+      const sp = nowSP();
+      const target = new Date(sp.getTime() + 30 * 60 * 1000);
+      const dow = target.getDay();
+      const hh = String(target.getHours()).padStart(2, "0");
+      const mm = String(target.getMinutes()).padStart(2, "0");
+      const timeKey = `${hh}:${mm}`;
+      const dayKey = `${target.getFullYear()}-${target.getMonth()}-${target.getDate()}`;
+
+      events.forEach((ev) => {
+        if (!ev.notify_enabled || !ev.is_active) return;
+        if (!ev.days_of_week.includes(dow)) return;
+        if (ev.time_of_day.slice(0, 5) !== timeKey) return;
+        const k = `${ev.id}-${dayKey}-${timeKey}`;
+        if (sentRef.current.has(k)) return;
+        sentRef.current.add(k);
+        try { localStorage.setItem(`agenda-sent:${k}`, "1"); } catch {}
+        showLocalNotification(
+          `⏰ Em 30 min: ${ev.title}`,
+          ev.description || "Hora de se preparar!",
+          "/agenda"
+        );
+      });
+    };
+    // hidrata sentRef do localStorage
+    try {
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith("agenda-sent:")) sentRef.current.add(k.replace("agenda-sent:", ""));
+      });
+    } catch {}
+    tick();
+    const id = setInterval(tick, 30 * 1000);
+    return () => clearInterval(id);
+  }, [perm, events]);
 
   const load = async (uid: string) => {
     setLoading(true);
@@ -65,25 +115,22 @@ function AgendaPage() {
     setLoading(false);
   };
 
-  const enablePush = async () => {
-    const sub = await subscribePush();
-    if (!sub) { toast.error("Permissão negada para notificações"); return; }
-    if (!userId) return;
-    await supabase.from("push_subscriptions").upsert({
-      user_id: userId,
-      endpoint: sub.endpoint,
-      p256dh: sub.p256dh,
-      auth: sub.auth,
-      user_agent: navigator.userAgent,
-    }, { onConflict: "endpoint" });
-    setPushPerm("granted");
-    toast.success("Notificações ativadas! Você receberá lembretes 30min antes.");
+  const enableNotif = async () => {
+    await registerServiceWorker();
+    const p = await requestNotificationPermission();
+    setPerm(p);
+    if (p === "granted") {
+      toast.success("Notificações ativadas! Mantenha o app instalado/aberto para receber.");
+      showLocalNotification("Notificações ativas ✅", "Você receberá um lembrete 30 min antes de cada compromisso.");
+    } else {
+      toast.error("Permissão negada. Ative nas configurações do navegador.");
+    }
   };
 
   const toggleDay = (d: number) => {
     setForm((f) => ({
       ...f,
-      days_of_week: f.days_of_week.includes(d) ? f.days_of_week.filter(x => x !== d) : [...f.days_of_week, d].sort(),
+      days_of_week: f.days_of_week.includes(d) ? f.days_of_week.filter((x) => x !== d) : [...f.days_of_week, d].sort(),
     }));
   };
 
@@ -95,7 +142,7 @@ function AgendaPage() {
     if (error) { toast.error(error.message); return; }
     toast.success("Rotina criada!");
     setShowForm(false);
-    setForm({ title: "", description: "", time_of_day: "08:00", days_of_week: [1,2,3,4,5], repeat_count: 1, notify_enabled: true });
+    setForm({ title: "", description: "", time_of_day: "08:00", days_of_week: [1, 2, 3, 4, 5], repeat_count: 1, notify_enabled: true });
     load(userId);
   };
 
@@ -121,8 +168,8 @@ function AgendaPage() {
             <InfinityLogo size={32} />
             <span className="font-bold text-foreground hidden sm:block">AGENDA</span>
           </Link>
-          {pushPerm !== "granted" ? (
-            <button onClick={enablePush} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow flex items-center gap-2">
+          {perm !== "granted" ? (
+            <button onClick={enableNotif} className="gradient-neon px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow flex items-center gap-2">
               <Bell className="w-4 h-4" /> Ativar Notificações
             </button>
           ) : (
@@ -140,6 +187,9 @@ function AgendaPage() {
           </h1>
           <p className="text-muted-foreground mt-1">
             Cadastre rotinas com horário e dias. Receba um aviso <strong className="text-primary">30 minutos antes</strong> de cada compromisso.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            💡 Para receber lembretes mesmo com a tela bloqueada, instale o app (menu do navegador → "Adicionar à tela inicial") e mantenha-o em segundo plano.
           </p>
         </motion.div>
 
@@ -192,7 +242,7 @@ function AgendaPage() {
               <label className="flex items-end gap-2 text-sm text-foreground pb-2">
                 <input type="checkbox" checked={form.notify_enabled} onChange={(e) => setForm({ ...form, notify_enabled: e.target.checked })}
                   className="w-4 h-4 accent-primary" />
-                Ativar notificação push (30 min antes)
+                Ativar notificação (30 min antes)
               </label>
             </div>
 
@@ -217,7 +267,7 @@ function AgendaPage() {
               className="glass-strong rounded-2xl p-5 flex items-center gap-4 border border-border hover:border-primary/40 transition-colors">
               <div className="w-14 h-14 rounded-xl gradient-neon flex flex-col items-center justify-center text-primary-foreground neon-glow shrink-0">
                 <Clock className="w-4 h-4" />
-                <span className="text-xs font-bold mt-0.5">{ev.time_of_day.slice(0,5)}</span>
+                <span className="text-xs font-bold mt-0.5">{ev.time_of_day.slice(0, 5)}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-foreground truncate">{ev.title}</h3>
@@ -239,6 +289,7 @@ function AgendaPage() {
           ))}
         </div>
       </main>
+      <FloatingSupportButton />
     </div>
   );
 }

@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, LogOut, User, LayoutGrid, MessageCircle, Calendar as CalendarIcon, Wrench } from "lucide-react";
+import { Search, LogOut, User, LayoutGrid, Calendar as CalendarIcon, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { AccountCard } from "@/components/AccountCard";
 import { AccountDetailModal } from "@/components/AccountDetailModal";
 import { NotificationBell } from "@/components/NotificationBell";
+import { FloatingSupportButton } from "@/components/FloatingSupportButton";
 import { ForcePasswordChangeModal } from "@/components/ForcePasswordChangeModal";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
@@ -46,7 +47,7 @@ function DashboardPage() {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
-  const [supportWhatsapp, setSupportWhatsapp] = useState<string>("");
+  
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,9 +60,6 @@ function DashboardPage() {
       setUser({ id: authUser.id, email: authUser.email, full_name: profile?.full_name ?? undefined, plan: profile?.plan || "basic" });
       setMustChangePassword(!!(profile as any)?.must_change_password);
       loadAccounts(profile?.plan || "basic");
-
-      const { data: settings } = await supabase.from("site_settings").select("support_whatsapp").limit(1).maybeSingle();
-      setSupportWhatsapp((settings as any)?.support_whatsapp || "");
     };
     checkAuth();
 
@@ -120,16 +118,6 @@ function DashboardPage() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {supportWhatsapp && (
-              <a
-                href={`https://wa.me/${supportWhatsapp.replace(/\D/g, "")}`}
-                target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-500/15 text-green-400 hover:bg-green-500/25 transition-colors text-xs font-semibold"
-                title="Suporte via WhatsApp"
-              >
-                <MessageCircle className="w-4 h-4" /> <span className="hidden sm:inline">Suporte</span>
-              </a>
-            )}
             <NotificationBell />
             <div className="hidden sm:flex items-center gap-2 glass rounded-xl px-3 py-2">
               <User className="w-4 h-4 text-primary" />
@@ -254,6 +242,8 @@ function DashboardPage() {
           onChanged={() => setMustChangePassword(false)}
         />
       )}
+
+      <FloatingSupportButton />
     </div>
   );
 }
