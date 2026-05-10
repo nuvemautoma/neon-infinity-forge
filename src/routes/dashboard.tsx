@@ -235,7 +235,7 @@ function DashboardPage() {
             </div>
           </div>
           <div className="mt-4 flex flex-col sm:flex-row gap-2">
-            <Link to="/leads/extrair" className="flex-1 px-4 py-2.5 rounded-xl gradient-neon text-primary-foreground text-sm font-bold neon-glow flex items-center justify-center gap-2">
+            <Link to="/extrair" className="flex-1 px-4 py-2.5 rounded-xl gradient-neon text-primary-foreground text-sm font-bold neon-glow flex items-center justify-center gap-2">
               <Search className="w-4 h-4" />Extrair leads
             </Link>
             <Link to="/leads" className="flex-1 px-4 py-2.5 rounded-xl bg-primary/15 text-primary text-sm font-semibold border border-primary/30 flex items-center justify-center gap-2">

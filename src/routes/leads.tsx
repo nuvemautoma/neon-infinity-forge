@@ -154,7 +154,7 @@ function LeadsPage() {
             <h1 className="text-lg font-bold text-foreground truncate">Meus Leads</h1>
             <span className="text-xs text-muted-foreground hidden sm:inline">· {total} no total</span>
           </div>
-          <Link to="/leads/extrair" className="px-4 py-2 rounded-xl gradient-neon text-primary-foreground text-sm font-semibold neon-glow flex items-center gap-2">
+          <Link to="/extrair" className="px-4 py-2 rounded-xl gradient-neon text-primary-foreground text-sm font-semibold neon-glow flex items-center gap-2">
             <Search className="w-4 h-4" />
             <span className="hidden sm:inline">Extrair leads</span>
           </Link>
@@ -233,7 +233,7 @@ function LeadsPage() {
           <div className="text-center py-20 text-muted-foreground">
             <Users className="w-14 h-14 mx-auto mb-3 opacity-20" />
             <p className="text-sm">Nenhum lead nesta coluna ainda.</p>
-            <Link to="/leads/extrair" className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl bg-primary/15 text-primary text-sm font-semibold border border-primary/30">
+            <Link to="/extrair" className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl bg-primary/15 text-primary text-sm font-semibold border border-primary/30">
               <Search className="w-4 h-4" />Extrair leads
             </Link>
           </div>
