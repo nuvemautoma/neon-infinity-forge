@@ -362,6 +362,108 @@ export const extractLeads = createServerFn({ method: "POST" })
       }
     }
 
+async function searchFirecrawl(niche: string, name: string, city: string, state: string, country: string, limit: number): Promise<LeadResult[]> {
+  const apiKey = process.env.FIRECRAWL_API_KEY;
+  if (!apiKey) return [];
+  const loc = [city, state, country].filter(Boolean).join(", ");
+  const term = name ? `${niche} ${name}` : (niche || "comércios");
+  const queries = [
+    `${term} em ${loc} contato telefone`,
+    `${term} ${loc} site oficial`,
+    `melhores ${term} ${city}`,
+  ];
+  const results: LeadResult[] = [];
+  const seenUrls = new Set<string>();
+  for (const q of queries) {
+    if (results.length >= limit) break;
+    try {
+      const r = await fetch("https://api.firecrawl.dev/v2/search", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q, limit: 10 }),
+      });
+      if (!r.ok) continue;
+      const j = await r.json() as { data?: { web?: Array<{ url: string; title?: string; description?: string }> } | Array<any> };
+      const items: Array<{ url: string; title?: string; description?: string }> = Array.isArray(j.data)
+        ? (j.data as any[])
+        : ((j.data as any)?.web || []);
+      for (const it of items) {
+        if (!it.url || seenUrls.has(it.url)) continue;
+        const dom = domainOf(it.url);
+        // ignora agregadores/diretórios
+        if (/(yelp|tripadvisor|google\.|facebook\.|instagram\.|wikipedia|youtube|maps\.app|foursquare|ifood|ubereats|olx\.|mercadolivre|guiamais|telelistas|apontador|booking\.|airbnb|kekanto)/i.test(dom)) continue;
+        seenUrls.add(it.url);
+        const title = (it.title || dom).replace(/\s*[\|\-–—]\s*.*$/, "").trim().slice(0, 120);
+        results.push({
+          external_id: `fc:${dom}`,
+          source: "osm",
+          name: title || dom,
+          phone: null,
+          email: null,
+          website: `https://${dom}`,
+          address: null,
+          lat: null,
+          lng: null,
+          rating: null,
+          reviews_count: null,
+          photo_url: null,
+          description: it.description || null,
+          category: niche || null,
+        });
+        if (results.length >= limit) break;
+      }
+    } catch {}
+  }
+  return results;
+}
+
+export const extractLeads = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => ExtractSchema.parse(d))
+  .handler(async ({ data }) => {
+    const bbox = await geocode(data.country, data.state, data.city);
+
+    const tasks: Array<Promise<LeadResult[]>> = [
+      searchOSM(bbox, data.niche, data.name, data.limit),
+      searchFirecrawl(data.niche, data.name, data.city, data.state, data.country, Math.min(30, data.limit)),
+    ];
+    let googleUsed = false;
+    if (data.useGoogle) {
+      const gKey = await getServerGoogleKey();
+      if (gKey) {
+        googleUsed = true;
+        const q = data.name ? `${data.niche} ${data.name}` : (data.niche || "comércios");
+        tasks.push(searchGoogle(gKey, `${q} em ${data.city}`, bbox.lat, bbox.lng, 40));
+      }
+    }
+    const settled = await Promise.allSettled(tasks);
+    let merged: LeadResult[] = [];
+    for (const s of settled) if (s.status === "fulfilled") merged.push(...s.value);
+
+    // Dedup por nome + endereço (e por domínio do site quando sem endereço)
+    const seen = new Set<string>();
+    const dedup: LeadResult[] = [];
+    for (const r of merged) {
+      const addrKey = (r.address || "").toLowerCase().slice(0, 40);
+      const siteKey = r.website ? domainOf(r.website) : "";
+      const key = `${r.name.toLowerCase()}|${addrKey}|${siteKey}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      dedup.push(r);
+    }
+
+    // Enriquece email
+    let enrichedCount = 0;
+    if (data.enrichEmail) {
+      const sites = dedup.filter((r) => r.website && !r.email).map((r) => r.website!) as string[];
+      const emailMap = await enrichEmailsBatch(sites);
+      for (const r of dedup) {
+        if (!r.email && r.website && emailMap.has(r.website)) {
+          r.email = emailMap.get(r.website)!;
+          if (r.email) enrichedCount++;
+        }
+      }
+    }
+
     return {
       results: dedup,
       meta: {
