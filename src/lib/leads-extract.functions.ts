@@ -30,43 +30,78 @@ const ExtractSchema = z.object({
 });
 
 const OSM_NICHE_MAP: Record<string, string[]> = {
-  restaurante: ['amenity~"restaurant|fast_food|cafe|food_court|bar|pub"'],
-  bar: ['amenity~"bar|pub"'],
-  cafe: ['amenity="cafe"'],
+  restaurante: ['amenity~"restaurant|fast_food|food_court"'],
+  bar: ['amenity~"bar|pub|biergarten"'],
+  cafe: ['amenity~"cafe|coffee_shop"'],
   lanchonete: ['amenity~"fast_food|cafe"'],
+  pizzaria: ['amenity="restaurant"', 'cuisine~"pizza",i'],
   padaria: ['shop="bakery"'],
-  mercado: ['shop~"supermarket|convenience|grocery"'],
+  mercado: ['shop~"supermarket|convenience|grocery|greengrocer"'],
+  hortifruti: ['shop~"greengrocer|farm"'],
   acougue: ['shop="butcher"'],
-  farmacia: ['amenity="pharmacy"'],
+  farmacia: ['amenity="pharmacy"', 'shop="chemist"'],
+  "clinica medica": ['amenity~"clinic|doctors|hospital"'],
   hospital: ['amenity~"hospital|clinic"'],
   clinica: ['amenity~"clinic|doctors"'],
   dentista: ['amenity="dentist"'],
+  psicologo: ['healthcare="psychotherapist"', 'amenity="doctors"'],
+  fisioterapeuta: ['healthcare="physiotherapist"'],
   veterinario: ['amenity="veterinary"'],
   petshop: ['shop="pet"'],
-  barbearia: ['shop~"hairdresser|beauty"', 'craft~"barbershop"'],
-  cabeleireiro: ['shop~"hairdresser|beauty"'],
-  salao: ['shop~"hairdresser|beauty"'],
-  academia: ['leisure="fitness_centre"', 'sport="fitness"'],
-  hotel: ['tourism~"hotel|hostel|guest_house|motel|apartment"'],
-  pousada: ['tourism~"guest_house|hostel"'],
-  escola: ['amenity~"school|kindergarten|college|university"'],
+  barbearia: ['shop~"hairdresser"', 'craft~"barbershop"'],
+  "salao de beleza": ['shop~"hairdresser|beauty"'],
+  estetica: ['shop~"beauty|cosmetics"', 'amenity="spa"'],
+  manicure: ['shop~"beauty|nail"'],
+  academia: ['leisure~"fitness_centre|sports_centre"', 'sport~"fitness"'],
+  "estudio de pilates": ['leisure="fitness_centre"', 'sport~"pilates|yoga"'],
+  hotel: ['tourism~"hotel|motel|apartment"'],
+  pousada: ['tourism~"guest_house|hostel|chalet"'],
+  airbnb: ['tourism~"apartment|guest_house|chalet"'],
+  escola: ['amenity~"school|kindergarten"'],
+  "curso de idiomas": ['amenity~"language_school|school"'],
+  "curso tecnico": ['amenity~"college|university|school"'],
+  "auto-escola": ['amenity="driving_school"'],
   igreja: ['amenity="place_of_worship"'],
-  oficina: ['shop~"car_repair|motorcycle_repair"'],
-  posto: ['amenity="fuel"'],
-  loja: ['shop'],
-  roupas: ['shop~"clothes|fashion|boutique"'],
-  calcados: ['shop="shoes"'],
-  moveis: ['shop="furniture"'],
-  eletronicos: ['shop~"electronics|mobile_phone|computer"'],
-  contabilidade: ['office="accountant"'],
+  "oficina mecanica": ['shop~"car_repair|motorcycle_repair"'],
+  "posto de gasolina": ['amenity="fuel"'],
+  "lava-rapido": ['amenity="car_wash"'],
+  "auto eletrica": ['shop~"car_repair|car_parts"'],
+  "loja de roupas": ['shop~"clothes|fashion|boutique"'],
+  "loja de calcados": ['shop="shoes"'],
+  "loja de moveis": ['shop="furniture"'],
+  "loja de eletronicos": ['shop~"electronics|mobile_phone|computer|hifi"'],
+  otica: ['shop="optician"'],
+  contabilidade: ['office~"accountant|tax"'],
   advogado: ['office="lawyer"'],
   imobiliaria: ['office="estate_agent"'],
+  "corretor de seguros": ['office~"insurance"'],
+  construtora: ['office~"company|construction"', 'craft~"builder"'],
+  "material de construcao": ['shop~"doityourself|hardware|trade|building_supplies"'],
+  marcenaria: ['craft~"carpenter|joiner"'],
+  serralheria: ['craft~"metal_construction|blacksmith"'],
+  buffet: ['amenity~"restaurant|events_venue"'],
+  "festas e eventos": ['amenity~"events_venue|community_centre"'],
+  fotografo: ['shop="photo"', 'craft="photographer"'],
+  grafica: ['shop~"copyshop|stationery"', 'craft~"printer"'],
 };
 
+function normalizeKey(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
 function nicheFilters(niche: string): string[] {
-  const k = niche.trim().toLowerCase();
-  if (!k) return ["shop", "amenity", "office", "craft", "tourism"];
-  return OSM_NICHE_MAP[k] || [`shop~"${k}",i`, `amenity~"${k}",i`, `office~"${k}",i`, `craft~"${k}",i`];
+  const k = normalizeKey(niche);
+  if (!k) return ['shop', 'amenity~"restaurant|cafe|bar|fast_food|pharmacy|fuel|bank"', 'office', 'craft', 'tourism~"hotel|guest_house"'];
+  if (OSM_NICHE_MAP[k]) return OSM_NICHE_MAP[k];
+  // tenta correspondência parcial
+  for (const key of Object.keys(OSM_NICHE_MAP)) {
+    if (k.includes(key) || key.includes(k)) return OSM_NICHE_MAP[key];
+  }
+  // fallback: também busca por nome contendo o termo
+  return [
+    `shop~"${k}",i`, `amenity~"${k}",i`, `office~"${k}",i`, `craft~"${k}",i`,
+    `name~"${k}",i`,
+  ];
 }
 
 const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
@@ -285,12 +320,70 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
   return out;
 }
 
+async function searchFirecrawl(niche: string, name: string, city: string, state: string, country: string, limit: number): Promise<LeadResult[]> {
+  const apiKey = process.env.FIRECRAWL_API_KEY;
+  if (!apiKey) return [];
+  const loc = [city, state, country].filter(Boolean).join(", ");
+  const term = name ? `${niche} ${name}` : (niche || "comércios");
+  const queries = [
+    `${term} em ${loc} contato telefone`,
+    `${term} ${loc} site oficial`,
+    `melhores ${term} ${city}`,
+  ];
+  const results: LeadResult[] = [];
+  const seenUrls = new Set<string>();
+  for (const q of queries) {
+    if (results.length >= limit) break;
+    try {
+      const r = await fetch("https://api.firecrawl.dev/v2/search", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q, limit: 10 }),
+      });
+      if (!r.ok) continue;
+      const j = await r.json() as { data?: { web?: Array<{ url: string; title?: string; description?: string }> } | Array<any> };
+      const items: Array<{ url: string; title?: string; description?: string }> = Array.isArray(j.data)
+        ? (j.data as any[])
+        : ((j.data as any)?.web || []);
+      for (const it of items) {
+        if (!it.url || seenUrls.has(it.url)) continue;
+        const dom = domainOf(it.url);
+        // ignora agregadores/diretórios
+        if (/(yelp|tripadvisor|google\.|facebook\.|instagram\.|wikipedia|youtube|maps\.app|foursquare|ifood|ubereats|olx\.|mercadolivre|guiamais|telelistas|apontador|booking\.|airbnb|kekanto)/i.test(dom)) continue;
+        seenUrls.add(it.url);
+        const title = (it.title || dom).replace(/\s*[\|\-–—]\s*.*$/, "").trim().slice(0, 120);
+        results.push({
+          external_id: `fc:${dom}`,
+          source: "osm",
+          name: title || dom,
+          phone: null,
+          email: null,
+          website: `https://${dom}`,
+          address: null,
+          lat: null,
+          lng: null,
+          rating: null,
+          reviews_count: null,
+          photo_url: null,
+          description: it.description || null,
+          category: niche || null,
+        });
+        if (results.length >= limit) break;
+      }
+    } catch {}
+  }
+  return results;
+}
+
 export const extractLeads = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => ExtractSchema.parse(d))
   .handler(async ({ data }) => {
     const bbox = await geocode(data.country, data.state, data.city);
 
-    const tasks: Array<Promise<LeadResult[]>> = [searchOSM(bbox, data.niche, data.name, data.limit)];
+    const tasks: Array<Promise<LeadResult[]>> = [
+      searchOSM(bbox, data.niche, data.name, data.limit),
+      searchFirecrawl(data.niche, data.name, data.city, data.state, data.country, Math.min(30, data.limit)),
+    ];
     let googleUsed = false;
     if (data.useGoogle) {
       const gKey = await getServerGoogleKey();
@@ -304,11 +397,13 @@ export const extractLeads = createServerFn({ method: "POST" })
     let merged: LeadResult[] = [];
     for (const s of settled) if (s.status === "fulfilled") merged.push(...s.value);
 
-    // Dedup por nome + endereço
+    // Dedup por nome + endereço (e por domínio do site quando sem endereço)
     const seen = new Set<string>();
     const dedup: LeadResult[] = [];
     for (const r of merged) {
-      const key = `${r.name.toLowerCase()}|${(r.address || "").toLowerCase().slice(0, 40)}`;
+      const addrKey = (r.address || "").toLowerCase().slice(0, 40);
+      const siteKey = r.website ? domainOf(r.website) : "";
+      const key = `${r.name.toLowerCase()}|${addrKey}|${siteKey}`;
       if (seen.has(key)) continue;
       seen.add(key);
       dedup.push(r);
