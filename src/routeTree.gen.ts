@@ -11,12 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LeadsRouteImport } from './routes/leads'
+import { Route as ExtrairRouteImport } from './routes/extrair'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AcsadminRouteImport } from './routes/acsadmin'
 import { Route as AcessRouteImport } from './routes/acess'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as LeadsExtrairRouteImport } from './routes/leads.extrair'
 import { Route as ApiPublicWebhookCaktoRouteImport } from './routes/api/public/webhook/cakto'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -27,6 +27,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const LeadsRoute = LeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExtrairRoute = ExtrairRouteImport.update({
+  id: '/extrair',
+  path: '/extrair',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -54,11 +59,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LeadsExtrairRoute = LeadsExtrairRouteImport.update({
-  id: '/extrair',
-  path: '/extrair',
-  getParentRoute: () => LeadsRoute,
-} as any)
 const ApiPublicWebhookCaktoRoute = ApiPublicWebhookCaktoRouteImport.update({
   id: '/api/public/webhook/cakto',
   path: '/api/public/webhook/cakto',
@@ -71,9 +71,9 @@ export interface FileRoutesByFullPath {
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
-  '/leads': typeof LeadsRouteWithChildren
+  '/extrair': typeof ExtrairRoute
+  '/leads': typeof LeadsRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/leads/extrair': typeof LeadsExtrairRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRoutesByTo {
@@ -82,9 +82,9 @@ export interface FileRoutesByTo {
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
-  '/leads': typeof LeadsRouteWithChildren
+  '/extrair': typeof ExtrairRoute
+  '/leads': typeof LeadsRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/leads/extrair': typeof LeadsExtrairRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRoutesById {
@@ -94,9 +94,9 @@ export interface FileRoutesById {
   '/acsadmin': typeof AcsadminRoute
   '/agenda': typeof AgendaRoute
   '/dashboard': typeof DashboardRoute
-  '/leads': typeof LeadsRouteWithChildren
+  '/extrair': typeof ExtrairRoute
+  '/leads': typeof LeadsRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/leads/extrair': typeof LeadsExtrairRoute
   '/api/public/webhook/cakto': typeof ApiPublicWebhookCaktoRoute
 }
 export interface FileRouteTypes {
@@ -107,9 +107,9 @@ export interface FileRouteTypes {
     | '/acsadmin'
     | '/agenda'
     | '/dashboard'
+    | '/extrair'
     | '/leads'
     | '/reset-password'
-    | '/leads/extrair'
     | '/api/public/webhook/cakto'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -118,9 +118,9 @@ export interface FileRouteTypes {
     | '/acsadmin'
     | '/agenda'
     | '/dashboard'
+    | '/extrair'
     | '/leads'
     | '/reset-password'
-    | '/leads/extrair'
     | '/api/public/webhook/cakto'
   id:
     | '__root__'
@@ -129,9 +129,9 @@ export interface FileRouteTypes {
     | '/acsadmin'
     | '/agenda'
     | '/dashboard'
+    | '/extrair'
     | '/leads'
     | '/reset-password'
-    | '/leads/extrair'
     | '/api/public/webhook/cakto'
   fileRoutesById: FileRoutesById
 }
@@ -141,7 +141,8 @@ export interface RootRouteChildren {
   AcsadminRoute: typeof AcsadminRoute
   AgendaRoute: typeof AgendaRoute
   DashboardRoute: typeof DashboardRoute
-  LeadsRoute: typeof LeadsRouteWithChildren
+  ExtrairRoute: typeof ExtrairRoute
+  LeadsRoute: typeof LeadsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicWebhookCaktoRoute: typeof ApiPublicWebhookCaktoRoute
 }
@@ -160,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/leads'
       fullPath: '/leads'
       preLoaderRoute: typeof LeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/extrair': {
+      id: '/extrair'
+      path: '/extrair'
+      fullPath: '/extrair'
+      preLoaderRoute: typeof ExtrairRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -197,13 +205,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/leads/extrair': {
-      id: '/leads/extrair'
-      path: '/extrair'
-      fullPath: '/leads/extrair'
-      preLoaderRoute: typeof LeadsExtrairRouteImport
-      parentRoute: typeof LeadsRoute
-    }
     '/api/public/webhook/cakto': {
       id: '/api/public/webhook/cakto'
       path: '/api/public/webhook/cakto'
@@ -214,26 +215,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface LeadsRouteChildren {
-  LeadsExtrairRoute: typeof LeadsExtrairRoute
-}
-
-const LeadsRouteChildren: LeadsRouteChildren = {
-  LeadsExtrairRoute: LeadsExtrairRoute,
-}
-
-const LeadsRouteWithChildren = LeadsRoute._addFileChildren(LeadsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcessRoute: AcessRoute,
   AcsadminRoute: AcsadminRoute,
   AgendaRoute: AgendaRoute,
   DashboardRoute: DashboardRoute,
-  LeadsRoute: LeadsRouteWithChildren,
+  ExtrairRoute: ExtrairRoute,
+  LeadsRoute: LeadsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicWebhookCaktoRoute: ApiPublicWebhookCaktoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

@@ -11,7 +11,7 @@ import { NICHE_SUGGESTIONS, BR_STATES, COUNTRIES } from "@/components/Leads/type
 import { Combobox } from "@/components/Leads/Combobox";
 import { toast, Toaster } from "sonner";
 
-export const Route = createFileRoute("/leads/extrair")({
+export const Route = createFileRoute("/extrair")({
   component: ExtractPage,
   head: () => ({ meta: [{ title: "Extrair Leads — Infinity I.A" }] }),
 });
