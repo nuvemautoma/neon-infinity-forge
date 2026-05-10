@@ -171,9 +171,9 @@ function LeadsPage() {
         </div>
       </header>
 
-      {/* Tabs de colunas */}
-      <div className="border-b border-border bg-background/60 sticky top-[125px] z-30">
-        <div className="container mx-auto px-2 flex gap-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+      {/* Tabs de colunas — quebram em linhas, sem rolagem horizontal */}
+      <div className="border-b border-border bg-background/60">
+        <div className="container mx-auto px-2 flex flex-wrap gap-1">
           {columns.map((col) => {
             const count = (byColumn[col.id] || []).length;
             const isActive = col.id === activeCol?.id;
