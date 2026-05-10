@@ -320,48 +320,6 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
   return out;
 }
 
-export const extractLeads = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => ExtractSchema.parse(d))
-  .handler(async ({ data }) => {
-    const bbox = await geocode(data.country, data.state, data.city);
-
-    const tasks: Array<Promise<LeadResult[]>> = [searchOSM(bbox, data.niche, data.name, data.limit)];
-    let googleUsed = false;
-    if (data.useGoogle) {
-      const gKey = await getServerGoogleKey();
-      if (gKey) {
-        googleUsed = true;
-        const q = data.name ? `${data.niche} ${data.name}` : (data.niche || "comércios");
-        tasks.push(searchGoogle(gKey, `${q} em ${data.city}`, bbox.lat, bbox.lng, 40));
-      }
-    }
-    const settled = await Promise.allSettled(tasks);
-    let merged: LeadResult[] = [];
-    for (const s of settled) if (s.status === "fulfilled") merged.push(...s.value);
-
-    // Dedup por nome + endereço
-    const seen = new Set<string>();
-    const dedup: LeadResult[] = [];
-    for (const r of merged) {
-      const key = `${r.name.toLowerCase()}|${(r.address || "").toLowerCase().slice(0, 40)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      dedup.push(r);
-    }
-
-    // Enriquece email
-    let enrichedCount = 0;
-    if (data.enrichEmail) {
-      const sites = dedup.filter((r) => r.website && !r.email).map((r) => r.website!) as string[];
-      const emailMap = await enrichEmailsBatch(sites);
-      for (const r of dedup) {
-        if (!r.email && r.website && emailMap.has(r.website)) {
-          r.email = emailMap.get(r.website)!;
-          if (r.email) enrichedCount++;
-        }
-      }
-    }
-
 async function searchFirecrawl(niche: string, name: string, city: string, state: string, country: string, limit: number): Promise<LeadResult[]> {
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) return [];
