@@ -224,20 +224,25 @@ function DashboardPage() {
         )}
 
         {/* CTA Leads */}
-        <Link
-          to="/leads"
-          className="mt-6 block glass-strong border border-primary/30 rounded-2xl p-6 hover:border-primary transition-all group"
-        >
+        <div className="mt-6 glass-strong border border-primary/30 rounded-2xl p-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow">
+            <div className="w-14 h-14 rounded-xl gradient-neon flex items-center justify-center neon-glow shrink-0">
               <Users className="w-7 h-7 text-primary-foreground" />
             </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">Extrator de Leads + CRM</h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-foreground">Extrator de Leads + CRM</h3>
               <p className="text-sm text-muted-foreground">Extraia comércios do Google Maps / OSM por nicho e cidade, e organize tudo em um Kanban com etiquetas personalizadas.</p>
             </div>
           </div>
-        </Link>
+          <div className="mt-4 flex flex-col sm:flex-row gap-2">
+            <Link to="/leads/extrair" className="flex-1 px-4 py-2.5 rounded-xl gradient-neon text-primary-foreground text-sm font-bold neon-glow flex items-center justify-center gap-2">
+              <Search className="w-4 h-4" />Extrair leads
+            </Link>
+            <Link to="/leads" className="flex-1 px-4 py-2.5 rounded-xl bg-primary/15 text-primary text-sm font-semibold border border-primary/30 flex items-center justify-center gap-2">
+              <LayoutGrid className="w-4 h-4" />Ver Kanban
+            </Link>
+          </div>
+        </div>
 
         {/* CTA Agenda */}
         <Link
