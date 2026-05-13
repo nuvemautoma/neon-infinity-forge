@@ -212,7 +212,9 @@ async function searchOSM(bbox: any, niche: string, name: string, limit: number):
           lng: el.lon ?? el.center?.lon ?? null,
           rating: null,
           reviews_count: null,
-          photo_url: tags.image || null,
+          photo_url: tags.image
+            || (tags.wikimedia_commons ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(String(tags.wikimedia_commons).replace(/^File:/i, ""))}?width=400` : null)
+            || tags["image:url"] || tags.flag || null,
           description: tags.description || tags.cuisine || null,
           category: tags.shop || tags.amenity || tags.office || tags.craft || tags.tourism || null,
         });
