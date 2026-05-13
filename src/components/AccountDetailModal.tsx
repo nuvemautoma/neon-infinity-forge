@@ -39,6 +39,7 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
 
   const isIndividual = account?.delivery_type === "individual";
   const isShared = account?.delivery_type === "shared";
+  const isPool = account?.delivery_type === "pool";
 
   useEffect(() => {
     setShowSupport(false);
@@ -49,6 +50,8 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
     if (!account || !isOpen) return;
     if (isIndividual) {
       claimItem();
+    } else if (isPool) {
+      claimPool();
     } else if (isShared) {
       claimShared();
     }
@@ -74,6 +77,20 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
       // sem itens cadastrados: cai no fallback de credenciais estáticas
       return;
     }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.content) {
+      setDelivered(row.content);
+      setDeliveredItemId(row.item_id ?? null);
+      setDeliveredLabel(row.label ?? null);
+    }
+  };
+
+  const claimPool = async () => {
+    if (!account) return;
+    setLoadingDelivery(true);
+    const { data, error } = await supabase.rpc("claim_pool_account" as any, { _account_id: account.id });
+    setLoadingDelivery(false);
+    if (error) { toast.error("Não foi possível obter o acesso: " + error.message); return; }
     const row = Array.isArray(data) ? data[0] : data;
     if (row?.content) {
       setDelivered(row.content);
