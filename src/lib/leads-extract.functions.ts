@@ -452,18 +452,25 @@ export const extractLeads = createServerFn({ method: "POST" })
       dedup.push(r);
     }
 
-    // Enriquece email
+    // Enriquece sites: email + telefone + imagem (og:image / favicon)
     let enrichedCount = 0;
     if (data.enrichEmail) {
-      const sites = (dedup.filter((r) => r.website && !r.email).map((r) => r.website!) as string[]).slice(0, 25);
-      const emailMap = await enrichEmailsBatch(sites);
+      const sites = (dedup
+        .filter((r) => r.website && (!r.email || !r.phone || !r.photo_url))
+        .map((r) => r.website!) as string[]).slice(0, 25);
+      const infoMap = await enrichSitesBatch(sites);
       for (const r of dedup) {
-        if (!r.email && r.website && emailMap.has(r.website)) {
-          r.email = emailMap.get(r.website)!;
-          if (r.email) enrichedCount++;
-        }
+        if (!r.website) continue;
+        const info = infoMap.get(r.website);
+        if (!info) continue;
+        if (!r.email && info.email) { r.email = info.email; enrichedCount++; }
+        if (!r.phone && info.phone) r.phone = info.phone;
+        if (!r.photo_url && info.image) r.photo_url = info.image;
       }
     }
+
+    // Filtra: só mantém leads com pelo menos telefone, email OU site
+    const filtered = dedup.filter((r) => (r.phone && r.phone.trim()) || (r.email && r.email.trim()) || (r.website && r.website.trim()));
 
     return {
       results: dedup,
