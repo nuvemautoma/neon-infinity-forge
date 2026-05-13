@@ -198,45 +198,68 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
             {/* Compartilhado: credenciais comuns */}
             {!isIndividual && (
               <div className="space-y-4">
-                {account.email && (
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="text-sm text-foreground">{account.email}</p>
-                    </div>
-                    <button onClick={() => copyToClipboard(account.email!, "Email")} className="p-2 rounded-lg hover:bg-accent transition-colors">
-                      <Copy className="w-4 h-4 text-primary" />
-                    </button>
-                  </div>
+                {loadingDelivery && (
+                  <div className="p-4 rounded-xl bg-accent/50 text-sm text-muted-foreground">Carregando seu acesso...</div>
                 )}
-
-                {account.password && (
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Senha</p>
-                      <p className="text-sm text-foreground font-mono">{showPassword ? account.password : "••••••••••"}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button onClick={() => setShowPassword(!showPassword)} className="p-2 rounded-lg hover:bg-accent transition-colors">
-                        {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
-                      </button>
-                      <button onClick={() => copyToClipboard(account.password!, "Senha")} className="p-2 rounded-lg hover:bg-accent transition-colors">
-                        <Copy className="w-4 h-4 text-primary" />
-                      </button>
+                {!loadingDelivery && delivered && (
+                  <div className="p-4 rounded-xl bg-primary/10 border border-primary/30">
+                    <p className="text-xs text-primary mb-1">🎯 Seu acesso ativo {deliveredLabel ? `· ${deliveredLabel}` : ""}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm text-foreground break-all flex-1 whitespace-pre-wrap">{delivered}</p>
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => copyToClipboard(delivered, "Acesso")} className="p-2 rounded-lg hover:bg-accent transition-colors">
+                          <Copy className="w-4 h-4 text-primary" />
+                        </button>
+                        {delivered.startsWith("http") && (
+                          <a href={delivered} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-accent transition-colors">
+                            <ExternalLink className="w-4 h-4 text-primary" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
-
-                {account.main_link && (
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-muted-foreground">Link principal</p>
-                      <p className="text-sm text-primary truncate">{account.main_link}</p>
-                    </div>
-                    <a href={account.main_link} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-accent transition-colors shrink-0">
-                      <ExternalLink className="w-4 h-4 text-primary" />
-                    </a>
-                  </div>
+                {!loadingDelivery && !delivered && (account.email || account.password || account.main_link) && (
+                  <>
+                    {account.email && (
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Email</p>
+                          <p className="text-sm text-foreground">{account.email}</p>
+                        </div>
+                        <button onClick={() => copyToClipboard(account.email!, "Email")} className="p-2 rounded-lg hover:bg-accent transition-colors">
+                          <Copy className="w-4 h-4 text-primary" />
+                        </button>
+                      </div>
+                    )}
+                    {account.password && (
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Senha</p>
+                          <p className="text-sm text-foreground font-mono">{showPassword ? account.password : "••••••••••"}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <button onClick={() => setShowPassword(!showPassword)} className="p-2 rounded-lg hover:bg-accent transition-colors">
+                            {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                          </button>
+                          <button onClick={() => copyToClipboard(account.password!, "Senha")} className="p-2 rounded-lg hover:bg-accent transition-colors">
+                            <Copy className="w-4 h-4 text-primary" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {account.main_link && (
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-accent/50">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-muted-foreground">Link principal</p>
+                          <p className="text-sm text-primary truncate">{account.main_link}</p>
+                        </div>
+                        <a href={account.main_link} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-accent transition-colors shrink-0">
+                          <ExternalLink className="w-4 h-4 text-primary" />
+                        </a>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -248,7 +271,6 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
               </div>
             )}
 
-            {/* Botão de solicitação */}
             <div className="mt-6 pt-6 border-t border-border">
               {!showSupport ? (
                 <button
@@ -256,26 +278,48 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 hover:bg-yellow-500/20 transition-colors text-sm font-medium"
                 >
                   <AlertTriangle className="w-4 h-4" />
-                  Erros ou link cheio? Solicite aqui
+                  Reportar problema (login inválido, créditos esgotados, etc.)
                 </button>
               ) : (
                 <div className="space-y-3">
-                  <textarea
-                    value={supportMsg}
-                    onChange={(e) => setSupportMsg(e.target.value.slice(0, 900))}
-                    placeholder="Descreva o problema (link cheio, erro de acesso, etc.)..."
-                    className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm h-28 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">{supportMsg.length}/900</p>
-                    <div className="flex gap-2">
-                      <button onClick={() => { setShowSupport(false); setSupportMsg(""); }} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border">Cancelar</button>
-                      <button onClick={submitSupport} disabled={sending} className="gradient-neon px-5 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow flex items-center gap-2 disabled:opacity-50">
-                        <Send className="w-4 h-4" />
-                        {sending ? "Enviando..." : "Enviar"}
-                      </button>
-                    </div>
-                  </div>
+                  {deliveredItemId ? (
+                    <>
+                      <p className="text-xs text-muted-foreground">Selecione o motivo. Se houver outro acesso disponível, ele será entregue automaticamente.</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {([
+                          ["login_invalido", "Login inválido"],
+                          ["sem_creditos", "Créditos esgotados"],
+                          ["outro", "Outro problema"],
+                        ] as const).map(([val, lbl]) => (
+                          <button key={val} onClick={() => setReportReason(val)} className={`px-3 py-2 rounded-xl text-xs font-medium border transition ${reportReason === val ? "bg-primary text-primary-foreground border-primary" : "bg-accent text-muted-foreground border-border hover:text-foreground"}`}>{lbl}</button>
+                        ))}
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => setShowSupport(false)} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border">Cancelar</button>
+                        <button onClick={reportIssue} disabled={reporting} className="gradient-neon px-5 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow flex items-center gap-2 disabled:opacity-50">
+                          <Send className="w-4 h-4" />{reporting ? "Enviando..." : "Reportar"}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <textarea
+                        value={supportMsg}
+                        onChange={(e) => setSupportMsg(e.target.value.slice(0, 900))}
+                        placeholder="Descreva o problema (link cheio, erro de acesso, etc.)..."
+                        className="w-full px-4 py-3 rounded-xl bg-input border border-border text-foreground text-sm h-28 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">{supportMsg.length}/900</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => { setShowSupport(false); setSupportMsg(""); }} className="px-4 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground border border-border">Cancelar</button>
+                          <button onClick={submitSupport} disabled={sending} className="gradient-neon px-5 py-2 rounded-xl text-sm font-semibold text-primary-foreground neon-glow flex items-center gap-2 disabled:opacity-50">
+                            <Send className="w-4 h-4" />{sending ? "Enviando..." : "Enviar"}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -285,3 +329,4 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
     </AnimatePresence>
   );
 }
+
