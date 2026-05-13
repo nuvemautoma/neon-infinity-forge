@@ -194,7 +194,7 @@ function IssuesPanel() {
       _account_id: issue.account_id,
       _user_id: issue.user_id,
       _content: assignContent.trim(),
-      _label: assignLabel.trim() || null,
+      _label: assignLabel.trim() || undefined,
     });
     if (error) { toast.error(error.message); return; }
     await supabase.rpc("admin_resolve_issue_report", { _report_id: issue.id, _notes: "Acesso entregue manualmente" });
