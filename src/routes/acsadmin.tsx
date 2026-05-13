@@ -160,7 +160,7 @@ function AdminDashboard() {
 
 const emptyForm = {
   name: "", category: "IA", email: "", password: "", main_link: "", observations: "", image_url: "", status: "active",
-  delivery_type: "shared", unlimited_stock: false, allowed_plans: ["basic", "plus", "standard"] as string[],
+  delivery_type: "shared", unlimited_stock: false, allowed_plans: ["plus", "enterprise"] as string[],
 };
 
 function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
@@ -209,7 +209,7 @@ function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
       name: a.name, category: a.category, email: a.email || "", password: a.password || "",
       main_link: a.main_link || "", observations: a.observations || "", image_url: a.image_url || "",
       status: a.status, delivery_type: a.delivery_type || "shared",
-      unlimited_stock: !!a.unlimited_stock, allowed_plans: a.allowed_plans || ["basic", "plus", "standard"],
+      unlimited_stock: !!a.unlimited_stock, allowed_plans: a.allowed_plans || ["plus", "enterprise"],
     });
     setEditId(a.id);
     setShowForm(true);
