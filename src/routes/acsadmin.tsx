@@ -16,7 +16,7 @@ export const Route = createFileRoute("/acsadmin")({
 
 type Tab = "dashboard" | "accounts" | "tools" | "stock" | "organization" | "urgency" | "support" | "notifications" | "plans" | "users" | "affiliates" | "settings" | "danger";
 
-const PLAN_OPTIONS = ["basic", "plus", "standard"] as const;
+const PLAN_OPTIONS = ["plus", "enterprise"] as const;
 
 function AdminPanel() {
   const navigate = useNavigate();
