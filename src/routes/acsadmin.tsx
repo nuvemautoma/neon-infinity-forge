@@ -211,6 +211,7 @@ function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
       main_link: a.main_link || "", observations: a.observations || "", image_url: a.image_url || "",
       status: a.status, delivery_type: a.delivery_type || "shared",
       unlimited_stock: !!a.unlimited_stock, allowed_plans: a.allowed_plans || ["plus", "enterprise"],
+      shared_capacity: a.shared_capacity ?? 4,
     });
     setEditId(a.id);
     setShowForm(true);
