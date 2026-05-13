@@ -28,20 +28,29 @@ interface AccountDetailModalProps {
 export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [delivered, setDelivered] = useState<string | null>(null);
+  const [deliveredItemId, setDeliveredItemId] = useState<string | null>(null);
+  const [deliveredLabel, setDeliveredLabel] = useState<string | null>(null);
   const [loadingDelivery, setLoadingDelivery] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
   const [supportMsg, setSupportMsg] = useState("");
   const [sending, setSending] = useState(false);
+  const [reportReason, setReportReason] = useState<"login_invalido" | "sem_creditos" | "outro">("login_invalido");
+  const [reporting, setReporting] = useState(false);
 
   const isIndividual = account?.delivery_type === "individual";
+  const isShared = account?.delivery_type === "shared";
 
   useEffect(() => {
     setShowSupport(false);
     setSupportMsg("");
     setDelivered(null);
+    setDeliveredItemId(null);
+    setDeliveredLabel(null);
     if (!account || !isOpen) return;
     if (isIndividual) {
       claimItem();
+    } else if (isShared) {
+      claimShared();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account?.id, isOpen]);
@@ -51,21 +60,49 @@ export function AccountDetailModal({ account, isOpen, onClose }: AccountDetailMo
     setLoadingDelivery(true);
     const { data, error } = await supabase.rpc("claim_stock_item", { _account_id: account.id });
     setLoadingDelivery(false);
+    if (error) { toast.error("Não foi possível obter o acesso: " + error.message); return; }
+    const row = Array.isArray(data) ? data[0] : data;
+    setDelivered(row?.content ?? null);
+  };
+
+  const claimShared = async () => {
+    if (!account) return;
+    setLoadingDelivery(true);
+    const { data, error } = await supabase.rpc("claim_shared_account", { _account_id: account.id });
+    setLoadingDelivery(false);
     if (error) {
-      toast.error("Não foi possível obter o acesso: " + error.message);
+      // sem itens cadastrados: cai no fallback de credenciais estáticas
       return;
     }
     const row = Array.isArray(data) ? data[0] : data;
     if (row?.content) {
       setDelivered(row.content);
-    } else {
-      setDelivered(null);
+      setDeliveredItemId(row.item_id ?? null);
+      setDeliveredLabel(row.label ?? null);
     }
   };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado!`);
+  };
+
+  const reportIssue = async () => {
+    if (!deliveredItemId) { toast.error("Sem acesso ativo para reportar"); return; }
+    setReporting(true);
+    const { data, error } = await supabase.rpc("report_account_issue", { _stock_item_id: deliveredItemId, _reason: reportReason });
+    setReporting(false);
+    if (error) { toast.error(error.message); return; }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.escalated) {
+      toast.success("Solicitação enviada ao admin. Você será notificado.");
+      setDelivered(null); setDeliveredItemId(null); setDeliveredLabel(null);
+    } else if (row?.new_content) {
+      toast.success("Novo acesso entregue automaticamente!");
+      setDelivered(row.new_content);
+      setDeliveredItemId(row.new_item_id ?? null);
+      setDeliveredLabel(row.new_label ?? null);
+    }
   };
 
   const submitSupport = async () => {
