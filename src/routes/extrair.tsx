@@ -55,10 +55,12 @@ function ExtractPage() {
       const r = await extract({ data: { ...form, limit: 80 } });
       setResults(r.results);
       setMeta(r.meta);
-      if (!r.results.length) toast.warning("Nenhum resultado encontrado");
-      else toast.success(`${r.results.length} resultados — ${r.meta.emailsFound} emails encontrados`);
+      const q = (r.meta as any)?.quota;
+      const qLabel = q ? ` · ${q.used}/${q.limit} extrações hoje` : "";
+      if (!r.results.length) toast.warning("Nenhum resultado encontrado" + qLabel);
+      else toast.success(`${r.results.length} resultados — ${r.meta.emailsFound} emails${qLabel}`);
     } catch (e: any) {
-      toast.error(e?.message || "Falha na extração");
+      toast.error(e?.message || "Limite diário atingido ou falha na extração");
     } finally { setLoading(false); }
   };
 

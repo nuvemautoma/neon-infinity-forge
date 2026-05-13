@@ -57,7 +57,7 @@ function DashboardPage() {
         return;
       }
       const { data: profile } = await supabase.from("profiles").select("plan, full_name, email, must_change_password").eq("id", authUser.id).single();
-      const userPlan = profile?.plan || "basic";
+      const userPlan = profile?.plan || "plus";
       setUser({ id: authUser.id, email: authUser.email, full_name: profile?.full_name ?? undefined, plan: userPlan });
       setMustChangePassword(!!(profile as any)?.must_change_password);
 
