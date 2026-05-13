@@ -123,17 +123,29 @@ function domainOf(url: string): string {
 }
 
 async function geocode(country: string, state: string, city: string) {
-  const params = new URLSearchParams({ format: "jsonv2", limit: "1", country, city, addressdetails: "0" });
-  if (state) params.set("state", state);
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-    headers: { "User-Agent": "InfinityIA-Leads/1.0", "Accept-Language": "pt-BR,pt;q=0.9" },
-  });
-  if (!r.ok) throw new Error(`Geocode falhou (${r.status})`);
-  const arr = await r.json() as Array<{ lat: string; lon: string; boundingbox: [string, string, string, string]; display_name: string }>;
-  if (!arr.length) throw new Error("Cidade não encontrada");
-  const it = arr[0];
-  const [s, n, w, e] = it.boundingbox.map(Number);
-  return { south: s, north: n, west: w, east: e, lat: Number(it.lat), lng: Number(it.lon), label: it.display_name };
+  // Tenta busca livre (q=) — funciona melhor para cidades internacionais
+  const q = [city, state, country].filter(Boolean).join(", ");
+  const attempts: string[] = [
+    `https://nominatim.openstreetmap.org/search?${new URLSearchParams({ format: "jsonv2", limit: "1", q, addressdetails: "0" }).toString()}`,
+    `https://nominatim.openstreetmap.org/search?${new URLSearchParams({ format: "jsonv2", limit: "1", country, city, ...(state ? { state } : {}), addressdetails: "0" }).toString()}`,
+    `https://nominatim.openstreetmap.org/search?${new URLSearchParams({ format: "jsonv2", limit: "1", q: city, addressdetails: "0" }).toString()}`,
+  ];
+  let lastErr: any = null;
+  for (const url of attempts) {
+    try {
+      const r = await fetch(url, {
+        headers: { "User-Agent": "InfinityIA-Leads/1.0", "Accept-Language": "en;q=0.9,pt-BR;q=0.8" },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!r.ok) { lastErr = new Error(`Geocode ${r.status}`); continue; }
+      const arr = await r.json() as Array<{ lat: string; lon: string; boundingbox: [string, string, string, string]; display_name: string }>;
+      if (!arr.length) { lastErr = new Error("Sem resultados"); continue; }
+      const it = arr[0];
+      const [s, n, w, e] = it.boundingbox.map(Number);
+      return { south: s, north: n, west: w, east: e, lat: Number(it.lat), lng: Number(it.lon), label: it.display_name };
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error(`Cidade não encontrada: ${q}${lastErr ? ` (${(lastErr as Error).message})` : ""}`);
 }
 
 async function searchOSM(bbox: any, niche: string, name: string, limit: number): Promise<LeadResult[]> {
