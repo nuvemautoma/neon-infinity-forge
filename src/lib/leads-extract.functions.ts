@@ -166,6 +166,7 @@ async function searchOSM(bbox: any, niche: string, name: string, limit: number):
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "InfinityIA-Leads/1.0" },
         body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(20000),
       });
       if (!r.ok) { lastErr = new Error(`Overpass ${r.status}`); continue; }
       const json = await r.json() as { elements?: Array<any> };
