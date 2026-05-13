@@ -142,6 +142,7 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
           if (PURCHASE_EVENTS.has(eventLower)) {
             const DEFAULT_PASSWORD = "0000";
             const today = new Date().toISOString().slice(0, 10);
+            const resolvedPlan = resolvePlan(data);
 
             const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
               email: data.email,
@@ -156,27 +157,27 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
                 if (existingUser) {
                   await supabaseAdmin.auth.admin.updateUserById(existingUser.id, { password: DEFAULT_PASSWORD });
                   await supabaseAdmin.from("profiles").update({
-                    plan: data.plan || "plus",
+                    plan: resolvedPlan,
                     status: "active",
                     must_change_password: true,
                     purchase_date: today,
                   }).eq("id", existingUser.id);
                 }
-                return new Response(JSON.stringify({ success: true, message: "User updated" }), { status: 200, headers: { "Content-Type": "application/json" } });
+                return new Response(JSON.stringify({ success: true, message: "User updated", plan: resolvedPlan }), { status: 200, headers: { "Content-Type": "application/json" } });
               }
               return new Response(JSON.stringify({ error: authError.message }), { status: 500, headers: { "Content-Type": "application/json" } });
             }
 
             if (authData.user) {
               await supabaseAdmin.from("profiles").update({
-                plan: data.plan || "plus",
+                plan: resolvedPlan,
                 status: "active",
                 must_change_password: true,
                 purchase_date: today,
               }).eq("id", authData.user.id);
             }
 
-            return new Response(JSON.stringify({ success: true, user_email: data.email }), { status: 200, headers: { "Content-Type": "application/json" } });
+            return new Response(JSON.stringify({ success: true, user_email: data.email, plan: resolvedPlan }), { status: 200, headers: { "Content-Type": "application/json" } });
           }
 
           if (eventLower === "cancelled" || eventLower === "canceled") {
