@@ -376,13 +376,8 @@ async function searchFirecrawl(niche: string, name: string, city: string, state:
 }
 
 export const extractLeads = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ExtractSchema.parse(d))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: quota, error: qErr } = await supabase.rpc("consume_extraction_quota");
-    if (qErr) throw new Error(qErr.message || "Limite diário atingido");
-    const quotaInfo = Array.isArray(quota) ? quota[0] : quota;
+  .handler(async ({ data }) => {
     const bbox = await geocode(data.country, data.state, data.city);
 
     const tasks: Array<Promise<LeadResult[]>> = [
