@@ -52,15 +52,17 @@ function ExtractPage() {
     if (!form.city.trim()) { toast.error("Cidade é obrigatória"); return; }
     setLoading(true); setResults([]); setMeta(null);
     try {
+      const { data: q, error: qe } = await supabase.rpc("consume_extraction_quota" as any);
+      if (qe) { toast.error(qe.message || "Limite diário atingido"); setLoading(false); return; }
+      const qi: any = Array.isArray(q) ? q[0] : q;
       const r = await extract({ data: { ...form, limit: 80 } });
       setResults(r.results);
-      setMeta(r.meta);
-      const q = (r.meta as any)?.quota;
-      const qLabel = q ? ` · ${q.used}/${q.limit} extrações hoje` : "";
+      setMeta({ ...r.meta, quota: qi ? { used: qi.used, limit: qi.daily_limit, plan: qi.plan } : null });
+      const qLabel = qi ? ` · ${qi.used}/${qi.daily_limit} extrações hoje` : "";
       if (!r.results.length) toast.warning("Nenhum resultado encontrado" + qLabel);
       else toast.success(`${r.results.length} resultados — ${r.meta.emailsFound} emails${qLabel}`);
     } catch (e: any) {
-      toast.error(e?.message || "Limite diário atingido ou falha na extração");
+      toast.error(e?.message || "Falha na extração");
     } finally { setLoading(false); }
   };
 
