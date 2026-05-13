@@ -106,6 +106,10 @@ function nicheFilters(niche: string): string[] {
 
 const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const BAD_EMAIL = /(\.png|\.jpg|\.jpeg|\.svg|\.gif|\.webp|sentry|wixpress|example\.com|@2x|@3x|sentry\.io)/i;
+const PHONE_RE = /(\+?\d[\d\s().-]{7,}\d)/g;
+const OG_IMAGE_RE = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i;
+const TWITTER_IMAGE_RE = /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i;
+const ICON_RE = /<link[^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]+href=["']([^"']+)["']/i;
 
 function pickBestEmail(text: string): string | null {
   const matches = text.match(EMAIL_RE) || [];
@@ -116,6 +120,21 @@ function pickBestEmail(text: string): string | null {
   if (!cleaned.length) return null;
   const pref = cleaned.find((m) => /^(contato|contact|comercial|vendas|atendimento|sac|info|hello|ola)/.test(m));
   return pref || cleaned[0];
+}
+
+function pickBestPhone(text: string): string | null {
+  const matches = text.match(PHONE_RE) || [];
+  for (const m of matches) {
+    const digits = m.replace(/\D/g, "");
+    if (digits.length >= 9 && digits.length <= 15) return m.trim();
+  }
+  return null;
+}
+
+function pickImage(html: string, baseUrl: string): string | null {
+  const m = html.match(OG_IMAGE_RE) || html.match(TWITTER_IMAGE_RE) || html.match(ICON_RE);
+  if (!m?.[1]) return null;
+  try { return new URL(m[1], baseUrl).toString(); } catch { return null; }
 }
 
 function domainOf(url: string): string {
@@ -193,7 +212,9 @@ async function searchOSM(bbox: any, niche: string, name: string, limit: number):
           lng: el.lon ?? el.center?.lon ?? null,
           rating: null,
           reviews_count: null,
-          photo_url: tags.image || null,
+          photo_url: tags.image
+            || (tags.wikimedia_commons ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(String(tags.wikimedia_commons).replace(/^File:/i, ""))}?width=400` : null)
+            || tags["image:url"] || tags.flag || null,
           description: tags.description || tags.cuisine || null,
           category: tags.shop || tags.amenity || tags.office || tags.craft || tags.tourism || null,
         });
@@ -260,14 +281,16 @@ async function getServerGoogleKey(): Promise<string | null> {
   } catch { return null; }
 }
 
-async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string | null>> {
-  const out = new Map<string, string | null>();
+type EnrichInfo = { email: string | null; phone: string | null; image: string | null };
+
+async function enrichSitesBatch(websites: string[]): Promise<Map<string, EnrichInfo>> {
+  const out = new Map<string, EnrichInfo>();
   const apiKey = process.env.FIRECRAWL_API_KEY;
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!apiKey || !websites.length) return out;
 
-  // Cache lookup
+  // Cache lookup (apenas email — phone/image são baratos pra extrair junto)
   const cacheMap = new Map<string, string | null>();
   if (SUPABASE_URL && KEY) {
     try {
@@ -290,7 +313,6 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
   }
 
   const upserts: Array<{ domain: string; email: string | null; scraped_at: string }> = [];
-  // Orçamento global: aborta enriquecimento ao se aproximar do limite do worker
   const deadline = Date.now() + 14000;
   const concurrency = 8;
   let idx = 0;
@@ -299,26 +321,31 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
       const i = idx++;
       const w = websites[i];
       const dom = domainOf(w);
-      if (cacheMap.has(dom)) { out.set(w, cacheMap.get(dom)!); continue; }
-      let email: string | null = null;
+      const info: EnrichInfo = { email: null, phone: null, image: null };
       const urls = [w, w.replace(/\/$/, "") + "/contato", w.replace(/\/$/, "") + "/contact"];
       for (const u of urls) {
-        if (email || Date.now() > deadline) break;
+        if ((info.email && info.phone && info.image) || Date.now() > deadline) break;
         try {
           const fc = await fetch("https://api.firecrawl.dev/v2/scrape", {
             method: "POST",
             headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ url: u, formats: ["markdown"], onlyMainContent: false, timeout: 6000 }),
+            body: JSON.stringify({ url: u, formats: ["markdown", "html"], onlyMainContent: false, timeout: 6000 }),
             signal: AbortSignal.timeout(7000),
           });
           if (!fc.ok) continue;
           const fj = await fc.json();
-          const text = (fj?.data?.markdown || "") + "\n" + (fj?.data?.html || "");
-          email = pickBestEmail(text);
+          const md = fj?.data?.markdown || "";
+          const html = fj?.data?.html || "";
+          const text = md + "\n" + html;
+          if (!info.email) info.email = cacheMap.get(dom) ?? pickBestEmail(text);
+          if (!info.phone) info.phone = pickBestPhone(text);
+          if (!info.image) info.image = pickImage(html, u) || fj?.data?.metadata?.ogImage || null;
         } catch {}
       }
-      out.set(w, email);
-      upserts.push({ domain: dom, email, scraped_at: new Date().toISOString() });
+      // Se cache tinha email, prioriza
+      if (cacheMap.has(dom) && !info.email) info.email = cacheMap.get(dom)!;
+      out.set(w, info);
+      upserts.push({ domain: dom, email: info.email, scraped_at: new Date().toISOString() });
     }
   }
   await Promise.all(Array.from({ length: concurrency }, worker));
@@ -425,26 +452,34 @@ export const extractLeads = createServerFn({ method: "POST" })
       dedup.push(r);
     }
 
-    // Enriquece email
+    // Enriquece sites: email + telefone + imagem (og:image / favicon)
     let enrichedCount = 0;
     if (data.enrichEmail) {
-      const sites = (dedup.filter((r) => r.website && !r.email).map((r) => r.website!) as string[]).slice(0, 25);
-      const emailMap = await enrichEmailsBatch(sites);
+      const sites = (dedup
+        .filter((r) => r.website && (!r.email || !r.phone || !r.photo_url))
+        .map((r) => r.website!) as string[]).slice(0, 25);
+      const infoMap = await enrichSitesBatch(sites);
       for (const r of dedup) {
-        if (!r.email && r.website && emailMap.has(r.website)) {
-          r.email = emailMap.get(r.website)!;
-          if (r.email) enrichedCount++;
-        }
+        if (!r.website) continue;
+        const info = infoMap.get(r.website);
+        if (!info) continue;
+        if (!r.email && info.email) { r.email = info.email; enrichedCount++; }
+        if (!r.phone && info.phone) r.phone = info.phone;
+        if (!r.photo_url && info.image) r.photo_url = info.image;
       }
     }
 
+    // Filtra: só mantém leads com pelo menos telefone, email OU site
+    const filtered = dedup.filter((r) => (r.phone && r.phone.trim()) || (r.email && r.email.trim()) || (r.website && r.website.trim()));
+
     return {
-      results: dedup,
+      results: filtered,
       meta: {
         bbox,
         googleUsed,
         emailsFound: enrichedCount,
-        total: dedup.length,
+        total: filtered.length,
+        filteredOut: dedup.length - filtered.length,
       },
     };
   });
