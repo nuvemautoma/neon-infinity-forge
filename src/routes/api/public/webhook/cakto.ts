@@ -99,10 +99,11 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
             console.error("[cakto webhook] CAKTO_WEBHOOK_SECRET not configured — rejecting request");
             return new Response(JSON.stringify({ error: "Webhook not configured" }), { status: 503, headers: { "Content-Type": "application/json" } });
           }
+          const safeEq = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
           const ok =
             verifySignature(rawBody, headerSig, secret) ||
-            (querySecret !== null && timingSafeEqual(Buffer.from(querySecret), Buffer.from(secret))) ||
-            (typeof bodySecret === "string" && bodySecret.length === secret.length && timingSafeEqual(Buffer.from(bodySecret), Buffer.from(secret)));
+            (typeof querySecret === "string" && safeEq(querySecret, secret)) ||
+            (typeof bodySecret === "string" && safeEq(bodySecret, secret));
           if (!ok) {
             return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 401, headers: { "Content-Type": "application/json" } });
           }
