@@ -482,6 +482,7 @@ export type Database = {
           email: string | null
           external_id: string | null
           id: string
+          last_refreshed_at: string | null
           lat: number | null
           lng: number | null
           name: string
@@ -505,6 +506,7 @@ export type Database = {
           email?: string | null
           external_id?: string | null
           id?: string
+          last_refreshed_at?: string | null
           lat?: number | null
           lng?: number | null
           name: string
@@ -528,6 +530,7 @@ export type Database = {
           email?: string | null
           external_id?: string | null
           id?: string
+          last_refreshed_at?: string | null
           lat?: number | null
           lng?: number | null
           name?: string
