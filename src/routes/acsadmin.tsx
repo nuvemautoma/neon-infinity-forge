@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Package, Users, Share2, Settings, LogOut, Plus, Pencil, Trash2, Eye, EyeOff, Star, Inbox, Bell, AlertTriangle, Boxes, ShieldAlert, Wrench } from "lucide-react";
+import { LayoutDashboard, Package, Users, Share2, Settings, LogOut, Plus, Pencil, Trash2, Eye, EyeOff, Star, Inbox, Bell, AlertTriangle, Boxes, ShieldAlert, Wrench, ClipboardList } from "lucide-react";
+import { AdminOrganization } from "@/components/AdminOrganization";
 import { supabase } from "@/integrations/supabase/client";
 import { InfinityLogo } from "@/components/InfinityLogo";
 import { HtmlAiPanel } from "@/components/HtmlAiPanel";
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/acsadmin")({
   head: () => ({ meta: [{ title: "Admin — Infinity I.A" }] }),
 });
 
-type Tab = "dashboard" | "accounts" | "tools" | "stock" | "urgency" | "support" | "notifications" | "plans" | "users" | "affiliates" | "settings" | "danger";
+type Tab = "dashboard" | "accounts" | "tools" | "stock" | "organization" | "urgency" | "support" | "notifications" | "plans" | "users" | "affiliates" | "settings" | "danger";
 
 const PLAN_OPTIONS = ["basic", "plus", "standard"] as const;
 
@@ -42,6 +43,7 @@ function AdminPanel() {
     { id: "tools", label: "Ferramentas Excl.", icon: Wrench },
     { id: "stock", label: "Estoque", icon: Boxes },
     { id: "urgency", label: "Urgência", icon: AlertTriangle },
+    { id: "organization", label: "Organização", icon: ClipboardList },
     { id: "support", label: "Solicitações", icon: Inbox },
     { id: "notifications", label: "Notificações", icon: Bell },
     { id: "plans", label: "Planos", icon: Star },
@@ -93,6 +95,7 @@ function AdminPanel() {
         {tab === "tools" && <AdminAccounts kind="tool" />}
         {tab === "stock" && <AdminStock />}
         {tab === "urgency" && <AdminUrgency />}
+        {tab === "organization" && <AdminOrganization />}
         {tab === "support" && <AdminSupport />}
         {tab === "notifications" && <AdminNotifications />}
         {tab === "plans" && <AdminPlans />}
