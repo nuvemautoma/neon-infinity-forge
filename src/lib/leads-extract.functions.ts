@@ -106,6 +106,10 @@ function nicheFilters(niche: string): string[] {
 
 const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const BAD_EMAIL = /(\.png|\.jpg|\.jpeg|\.svg|\.gif|\.webp|sentry|wixpress|example\.com|@2x|@3x|sentry\.io)/i;
+const PHONE_RE = /(\+?\d[\d\s().-]{7,}\d)/g;
+const OG_IMAGE_RE = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i;
+const TWITTER_IMAGE_RE = /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i;
+const ICON_RE = /<link[^>]+rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]+href=["']([^"']+)["']/i;
 
 function pickBestEmail(text: string): string | null {
   const matches = text.match(EMAIL_RE) || [];
@@ -116,6 +120,21 @@ function pickBestEmail(text: string): string | null {
   if (!cleaned.length) return null;
   const pref = cleaned.find((m) => /^(contato|contact|comercial|vendas|atendimento|sac|info|hello|ola)/.test(m));
   return pref || cleaned[0];
+}
+
+function pickBestPhone(text: string): string | null {
+  const matches = text.match(PHONE_RE) || [];
+  for (const m of matches) {
+    const digits = m.replace(/\D/g, "");
+    if (digits.length >= 9 && digits.length <= 15) return m.trim();
+  }
+  return null;
+}
+
+function pickImage(html: string, baseUrl: string): string | null {
+  const m = html.match(OG_IMAGE_RE) || html.match(TWITTER_IMAGE_RE) || html.match(ICON_RE);
+  if (!m?.[1]) return null;
+  try { return new URL(m[1], baseUrl).toString(); } catch { return null; }
 }
 
 function domainOf(url: string): string {
