@@ -43,6 +43,7 @@ function AdminPanel() {
     { id: "tools", label: "Ferramentas Excl.", icon: Wrench },
     { id: "stock", label: "Estoque", icon: Boxes },
     { id: "urgency", label: "Urgência", icon: AlertTriangle },
+    { id: "organization", label: "Organização", icon: ClipboardList },
     { id: "support", label: "Solicitações", icon: Inbox },
     { id: "notifications", label: "Notificações", icon: Bell },
     { id: "plans", label: "Planos", icon: Star },
