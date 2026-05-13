@@ -182,7 +182,7 @@ function IssuesPanel() {
   useEffect(() => { load(); }, [filter]);
 
   const resolve = async (id: string) => {
-    const { error } = await supabase.rpc("admin_resolve_issue_report", { _report_id: id, _notes: null });
+    const { error } = await supabase.rpc("admin_resolve_issue_report", { _report_id: id });
     if (error) { toast.error(error.message); return; }
     toast.success("Solicitação resolvida");
     load();
