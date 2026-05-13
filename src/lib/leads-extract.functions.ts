@@ -281,9 +281,9 @@ async function getServerGoogleKey(): Promise<string | null> {
   } catch { return null; }
 }
 
-type EnrichInfo = { email: string | null; phone: string | null; image: string | null };
+export type EnrichInfo = { email: string | null; phone: string | null; image: string | null };
 
-async function enrichSitesBatch(websites: string[]): Promise<Map<string, EnrichInfo>> {
+export async function enrichSitesBatch(websites: string[]): Promise<Map<string, EnrichInfo>> {
   const out = new Map<string, EnrichInfo>();
   const apiKey = process.env.FIRECRAWL_API_KEY;
   const SUPABASE_URL = process.env.SUPABASE_URL;
