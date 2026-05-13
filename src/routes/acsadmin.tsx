@@ -14,7 +14,7 @@ export const Route = createFileRoute("/acsadmin")({
   head: () => ({ meta: [{ title: "Admin — Infinity I.A" }] }),
 });
 
-type Tab = "dashboard" | "accounts" | "tools" | "stock" | "urgency" | "support" | "notifications" | "plans" | "users" | "affiliates" | "settings" | "danger";
+type Tab = "dashboard" | "accounts" | "tools" | "stock" | "organization" | "urgency" | "support" | "notifications" | "plans" | "users" | "affiliates" | "settings" | "danger";
 
 const PLAN_OPTIONS = ["basic", "plus", "standard"] as const;
 
