@@ -473,12 +473,13 @@ export const extractLeads = createServerFn({ method: "POST" })
     const filtered = dedup.filter((r) => (r.phone && r.phone.trim()) || (r.email && r.email.trim()) || (r.website && r.website.trim()));
 
     return {
-      results: dedup,
+      results: filtered,
       meta: {
         bbox,
         googleUsed,
         emailsFound: enrichedCount,
-        total: dedup.length,
+        total: filtered.length,
+        filteredOut: dedup.length - filtered.length,
       },
     };
   });
