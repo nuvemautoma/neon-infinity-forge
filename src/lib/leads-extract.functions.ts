@@ -428,7 +428,7 @@ export const extractLeads = createServerFn({ method: "POST" })
     // Enriquece email
     let enrichedCount = 0;
     if (data.enrichEmail) {
-      const sites = dedup.filter((r) => r.website && !r.email).map((r) => r.website!) as string[];
+      const sites = (dedup.filter((r) => r.website && !r.email).map((r) => r.website!) as string[]).slice(0, 25);
       const emailMap = await enrichEmailsBatch(sites);
       for (const r of dedup) {
         if (!r.email && r.website && emailMap.has(r.website)) {
