@@ -339,21 +339,22 @@ async function searchFirecrawl(niche: string, name: string, city: string, state:
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) return [];
   const loc = [city, state, country].filter(Boolean).join(", ");
-  const term = name ? `${niche} ${name}` : (niche || "comércios");
-  const queries = [
-    `${term} em ${loc} contato telefone`,
-    `${term} ${loc} site oficial`,
-    `melhores ${term} ${city}`,
-  ];
+  const term = name ? `${niche} ${name}` : (niche || "business");
+  const isBR = /brasil|brazil|portugal/i.test(country);
+  const queries = isBR
+    ? [`${term} em ${loc} contato telefone`, `${term} ${loc} site oficial`, `melhores ${term} ${city}`]
+    : [`${term} in ${loc} contact phone`, `${term} ${loc} official website`, `best ${term} ${city}`];
   const results: LeadResult[] = [];
   const seenUrls = new Set<string>();
+  const deadline = Date.now() + 10000;
   for (const q of queries) {
-    if (results.length >= limit) break;
+    if (results.length >= limit || Date.now() > deadline) break;
     try {
       const r = await fetch("https://api.firecrawl.dev/v2/search", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ query: q, limit: 10 }),
+        signal: AbortSignal.timeout(8000),
       });
       if (!r.ok) continue;
       const j = await r.json() as { data?: { web?: Array<{ url: string; title?: string; description?: string }> } | Array<any> };
