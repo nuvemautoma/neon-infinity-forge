@@ -397,6 +397,27 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_extraction_usage: {
+        Row: {
+          created_at: string
+          id: string
+          used_on: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          used_on?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          used_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_tag_assignments: {
         Row: {
           lead_id: string
@@ -870,6 +891,14 @@ export type Database = {
         Returns: {
           already_had: boolean
           content: string
+        }[]
+      }
+      consume_extraction_quota: {
+        Args: never
+        Returns: {
+          daily_limit: number
+          plan: string
+          used: number
         }[]
       }
       has_role: {
