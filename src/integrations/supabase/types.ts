@@ -83,6 +83,41 @@ export type Database = {
         }
         Relationships: []
       }
+      account_stock_deliveries: {
+        Row: {
+          account_id: string
+          delivered_at: string
+          id: string
+          stock_item_id: string
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          delivered_at?: string
+          id?: string
+          stock_item_id: string
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          delivered_at?: string
+          id?: string
+          stock_item_id?: string
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_stock_deliveries_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "account_stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_stock_items: {
         Row: {
           account_id: string
@@ -196,6 +231,7 @@ export type Database = {
           observations: string | null
           password: string | null
           rotation_days: number
+          shared_capacity: number
           sort_order: number | null
           status: string
           unlimited_stock: boolean
@@ -218,6 +254,7 @@ export type Database = {
           observations?: string | null
           password?: string | null
           rotation_days?: number
+          shared_capacity?: number
           sort_order?: number | null
           status?: string
           unlimited_stock?: boolean
@@ -240,6 +277,7 @@ export type Database = {
           observations?: string | null
           password?: string | null
           rotation_days?: number
+          shared_capacity?: number
           sort_order?: number | null
           status?: string
           unlimited_stock?: boolean
@@ -879,6 +917,15 @@ export type Database = {
       broadcast_notification: {
         Args: { _message: string; _plan?: string; _title: string }
         Returns: number
+      }
+      claim_pool_account: {
+        Args: { _account_id: string }
+        Returns: {
+          content: string
+          exhausted: boolean
+          item_id: string
+          label: string
+        }[]
       }
       claim_shared_account: {
         Args: { _account_id: string }
