@@ -262,6 +262,7 @@ function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
               <select value={form.delivery_type} onChange={(e) => setForm({ ...form, delivery_type: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm">
                 <option value="shared">Compartilhado (mesmo acesso para todos)</option>
                 <option value="individual">Individual (1 link/conta por usuário)</option>
+                <option value="pool">Pool (X usuários por conta · rotaciona)</option>
               </select>
             </div>
             <div>
@@ -277,6 +278,15 @@ function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
                   <input type="checkbox" checked={form.unlimited_stock} onChange={(e) => setForm({ ...form, unlimited_stock: e.target.checked })} className="w-4 h-4 accent-primary" />
                   Estoque infinito
                 </label>
+              </div>
+            )}
+            {form.delivery_type === "pool" && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Usuários por conta (capacidade)</label>
+                <input type="number" min={1} max={500} value={form.shared_capacity}
+                  onChange={(e) => setForm({ ...form, shared_capacity: Math.max(1, parseInt(e.target.value) || 1) })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-input border border-border text-foreground text-sm" />
+                <p className="text-[10px] text-muted-foreground mt-1">Quando atingir, o sistema entrega a próxima conta do estoque.</p>
               </div>
             )}
           </div>
