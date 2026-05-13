@@ -281,14 +281,16 @@ async function getServerGoogleKey(): Promise<string | null> {
   } catch { return null; }
 }
 
-async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string | null>> {
-  const out = new Map<string, string | null>();
+type EnrichInfo = { email: string | null; phone: string | null; image: string | null };
+
+async function enrichSitesBatch(websites: string[]): Promise<Map<string, EnrichInfo>> {
+  const out = new Map<string, EnrichInfo>();
   const apiKey = process.env.FIRECRAWL_API_KEY;
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!apiKey || !websites.length) return out;
 
-  // Cache lookup
+  // Cache lookup (apenas email — phone/image são baratos pra extrair junto)
   const cacheMap = new Map<string, string | null>();
   if (SUPABASE_URL && KEY) {
     try {
@@ -311,7 +313,6 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
   }
 
   const upserts: Array<{ domain: string; email: string | null; scraped_at: string }> = [];
-  // Orçamento global: aborta enriquecimento ao se aproximar do limite do worker
   const deadline = Date.now() + 14000;
   const concurrency = 8;
   let idx = 0;
@@ -320,26 +321,31 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
       const i = idx++;
       const w = websites[i];
       const dom = domainOf(w);
-      if (cacheMap.has(dom)) { out.set(w, cacheMap.get(dom)!); continue; }
-      let email: string | null = null;
+      const info: EnrichInfo = { email: null, phone: null, image: null };
       const urls = [w, w.replace(/\/$/, "") + "/contato", w.replace(/\/$/, "") + "/contact"];
       for (const u of urls) {
-        if (email || Date.now() > deadline) break;
+        if ((info.email && info.phone && info.image) || Date.now() > deadline) break;
         try {
           const fc = await fetch("https://api.firecrawl.dev/v2/scrape", {
             method: "POST",
             headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ url: u, formats: ["markdown"], onlyMainContent: false, timeout: 6000 }),
+            body: JSON.stringify({ url: u, formats: ["markdown", "html"], onlyMainContent: false, timeout: 6000 }),
             signal: AbortSignal.timeout(7000),
           });
           if (!fc.ok) continue;
           const fj = await fc.json();
-          const text = (fj?.data?.markdown || "") + "\n" + (fj?.data?.html || "");
-          email = pickBestEmail(text);
+          const md = fj?.data?.markdown || "";
+          const html = fj?.data?.html || "";
+          const text = md + "\n" + html;
+          if (!info.email) info.email = cacheMap.get(dom) ?? pickBestEmail(text);
+          if (!info.phone) info.phone = pickBestPhone(text);
+          if (!info.image) info.image = pickImage(html, u) || fj?.data?.metadata?.ogImage || null;
         } catch {}
       }
-      out.set(w, email);
-      upserts.push({ domain: dom, email, scraped_at: new Date().toISOString() });
+      // Se cache tinha email, prioriza
+      if (cacheMap.has(dom) && !info.email) info.email = cacheMap.get(dom)!;
+      out.set(w, info);
+      upserts.push({ domain: dom, email: info.email, scraped_at: new Date().toISOString() });
     }
   }
   await Promise.all(Array.from({ length: concurrency }, worker));
