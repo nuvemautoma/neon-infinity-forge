@@ -95,6 +95,7 @@ function AdminPanel() {
         {tab === "tools" && <AdminAccounts kind="tool" />}
         {tab === "stock" && <AdminStock />}
         {tab === "urgency" && <AdminUrgency />}
+        {tab === "organization" && <AdminOrganization />}
         {tab === "support" && <AdminSupport />}
         {tab === "notifications" && <AdminNotifications />}
         {tab === "plans" && <AdminPlans />}
