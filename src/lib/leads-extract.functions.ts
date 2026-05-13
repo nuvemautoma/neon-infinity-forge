@@ -289,11 +289,12 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
   }
 
   const upserts: Array<{ domain: string; email: string | null; scraped_at: string }> = [];
-  // limita concorrência
-  const concurrency = 6;
+  // Orçamento global: aborta enriquecimento ao se aproximar do limite do worker
+  const deadline = Date.now() + 14000;
+  const concurrency = 8;
   let idx = 0;
   async function worker() {
-    while (idx < websites.length) {
+    while (idx < websites.length && Date.now() < deadline) {
       const i = idx++;
       const w = websites[i];
       const dom = domainOf(w);
@@ -301,12 +302,13 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
       let email: string | null = null;
       const urls = [w, w.replace(/\/$/, "") + "/contato", w.replace(/\/$/, "") + "/contact"];
       for (const u of urls) {
-        if (email) break;
+        if (email || Date.now() > deadline) break;
         try {
           const fc = await fetch("https://api.firecrawl.dev/v2/scrape", {
             method: "POST",
             headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ url: u, formats: ["markdown", "html"], onlyMainContent: false, timeout: 12000 }),
+            body: JSON.stringify({ url: u, formats: ["markdown"], onlyMainContent: false, timeout: 6000 }),
+            signal: AbortSignal.timeout(7000),
           });
           if (!fc.ok) continue;
           const fj = await fc.json();
