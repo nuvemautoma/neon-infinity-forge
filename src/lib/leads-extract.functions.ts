@@ -435,6 +435,7 @@ export const extractLeads = createServerFn({ method: "POST" })
         googleUsed,
         emailsFound: enrichedCount,
         total: dedup.length,
+        quota: quotaInfo ? { used: quotaInfo.used, limit: quotaInfo.daily_limit, plan: quotaInfo.plan } : null,
       },
     };
   });
