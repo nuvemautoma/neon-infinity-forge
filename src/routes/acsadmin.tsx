@@ -161,6 +161,7 @@ function AdminDashboard() {
 const emptyForm = {
   name: "", category: "IA", email: "", password: "", main_link: "", observations: "", image_url: "", status: "active",
   delivery_type: "shared", unlimited_stock: false, allowed_plans: ["plus", "enterprise"] as string[],
+  shared_capacity: 4,
 };
 
 function AdminAccounts({ kind = "account" }: { kind?: "account" | "tool" }) {
