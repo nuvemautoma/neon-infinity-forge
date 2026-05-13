@@ -156,7 +156,7 @@ async function searchOSM(bbox: any, niche: string, name: string, limit: number):
     `node[${f}]${nameFilter}(${bboxStr});`,
     `way[${f}]${nameFilter}(${bboxStr});`,
   ]).join("\n");
-  const query = `[out:json][timeout:30];(\n${blocks}\n);out center ${limit};`;
+  const query = `[out:json][timeout:18];(\n${blocks}\n);out center ${limit};`;
 
   const endpoints = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
   let lastErr: any;
