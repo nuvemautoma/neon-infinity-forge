@@ -118,7 +118,7 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
                 if (existingUser) {
                   await supabaseAdmin.auth.admin.updateUserById(existingUser.id, { password: DEFAULT_PASSWORD });
                   await supabaseAdmin.from("profiles").update({
-                    plan: data.plan || "basic",
+                    plan: data.plan || "plus",
                     status: "active",
                     must_change_password: true,
                     purchase_date: today,
@@ -131,7 +131,7 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
 
             if (authData.user) {
               await supabaseAdmin.from("profiles").update({
-                plan: data.plan || "basic",
+                plan: data.plan || "plus",
                 status: "active",
                 must_change_password: true,
                 purchase_date: today,
