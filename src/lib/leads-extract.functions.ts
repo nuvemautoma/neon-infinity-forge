@@ -123,17 +123,29 @@ function domainOf(url: string): string {
 }
 
 async function geocode(country: string, state: string, city: string) {
-  const params = new URLSearchParams({ format: "jsonv2", limit: "1", country, city, addressdetails: "0" });
-  if (state) params.set("state", state);
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-    headers: { "User-Agent": "InfinityIA-Leads/1.0", "Accept-Language": "pt-BR,pt;q=0.9" },
-  });
-  if (!r.ok) throw new Error(`Geocode falhou (${r.status})`);
-  const arr = await r.json() as Array<{ lat: string; lon: string; boundingbox: [string, string, string, string]; display_name: string }>;
-  if (!arr.length) throw new Error("Cidade não encontrada");
-  const it = arr[0];
-  const [s, n, w, e] = it.boundingbox.map(Number);
-  return { south: s, north: n, west: w, east: e, lat: Number(it.lat), lng: Number(it.lon), label: it.display_name };
+  // Tenta busca livre (q=) — funciona melhor para cidades internacionais
+  const q = [city, state, country].filter(Boolean).join(", ");
+  const attempts: string[] = [
+    `https://nominatim.openstreetmap.org/search?${new URLSearchParams({ format: "jsonv2", limit: "1", q, addressdetails: "0" }).toString()}`,
+    `https://nominatim.openstreetmap.org/search?${new URLSearchParams({ format: "jsonv2", limit: "1", country, city, ...(state ? { state } : {}), addressdetails: "0" }).toString()}`,
+    `https://nominatim.openstreetmap.org/search?${new URLSearchParams({ format: "jsonv2", limit: "1", q: city, addressdetails: "0" }).toString()}`,
+  ];
+  let lastErr: any = null;
+  for (const url of attempts) {
+    try {
+      const r = await fetch(url, {
+        headers: { "User-Agent": "InfinityIA-Leads/1.0", "Accept-Language": "en;q=0.9,pt-BR;q=0.8" },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!r.ok) { lastErr = new Error(`Geocode ${r.status}`); continue; }
+      const arr = await r.json() as Array<{ lat: string; lon: string; boundingbox: [string, string, string, string]; display_name: string }>;
+      if (!arr.length) { lastErr = new Error("Sem resultados"); continue; }
+      const it = arr[0];
+      const [s, n, w, e] = it.boundingbox.map(Number);
+      return { south: s, north: n, west: w, east: e, lat: Number(it.lat), lng: Number(it.lon), label: it.display_name };
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error(`Cidade não encontrada: ${q}${lastErr ? ` (${(lastErr as Error).message})` : ""}`);
 }
 
 async function searchOSM(bbox: any, niche: string, name: string, limit: number): Promise<LeadResult[]> {
@@ -144,7 +156,7 @@ async function searchOSM(bbox: any, niche: string, name: string, limit: number):
     `node[${f}]${nameFilter}(${bboxStr});`,
     `way[${f}]${nameFilter}(${bboxStr});`,
   ]).join("\n");
-  const query = `[out:json][timeout:30];(\n${blocks}\n);out center ${limit};`;
+  const query = `[out:json][timeout:18];(\n${blocks}\n);out center ${limit};`;
 
   const endpoints = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
   let lastErr: any;
@@ -154,6 +166,7 @@ async function searchOSM(bbox: any, niche: string, name: string, limit: number):
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "InfinityIA-Leads/1.0" },
         body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(20000),
       });
       if (!r.ok) { lastErr = new Error(`Overpass ${r.status}`); continue; }
       const json = await r.json() as { elements?: Array<any> };
@@ -277,11 +290,12 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
   }
 
   const upserts: Array<{ domain: string; email: string | null; scraped_at: string }> = [];
-  // limita concorrência
-  const concurrency = 6;
+  // Orçamento global: aborta enriquecimento ao se aproximar do limite do worker
+  const deadline = Date.now() + 14000;
+  const concurrency = 8;
   let idx = 0;
   async function worker() {
-    while (idx < websites.length) {
+    while (idx < websites.length && Date.now() < deadline) {
       const i = idx++;
       const w = websites[i];
       const dom = domainOf(w);
@@ -289,12 +303,13 @@ async function enrichEmailsBatch(websites: string[]): Promise<Map<string, string
       let email: string | null = null;
       const urls = [w, w.replace(/\/$/, "") + "/contato", w.replace(/\/$/, "") + "/contact"];
       for (const u of urls) {
-        if (email) break;
+        if (email || Date.now() > deadline) break;
         try {
           const fc = await fetch("https://api.firecrawl.dev/v2/scrape", {
             method: "POST",
             headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ url: u, formats: ["markdown", "html"], onlyMainContent: false, timeout: 12000 }),
+            body: JSON.stringify({ url: u, formats: ["markdown"], onlyMainContent: false, timeout: 6000 }),
+            signal: AbortSignal.timeout(7000),
           });
           if (!fc.ok) continue;
           const fj = await fc.json();
@@ -324,21 +339,22 @@ async function searchFirecrawl(niche: string, name: string, city: string, state:
   const apiKey = process.env.FIRECRAWL_API_KEY;
   if (!apiKey) return [];
   const loc = [city, state, country].filter(Boolean).join(", ");
-  const term = name ? `${niche} ${name}` : (niche || "comércios");
-  const queries = [
-    `${term} em ${loc} contato telefone`,
-    `${term} ${loc} site oficial`,
-    `melhores ${term} ${city}`,
-  ];
+  const term = name ? `${niche} ${name}` : (niche || "business");
+  const isBR = /brasil|brazil|portugal/i.test(country);
+  const queries = isBR
+    ? [`${term} em ${loc} contato telefone`, `${term} ${loc} site oficial`, `melhores ${term} ${city}`]
+    : [`${term} in ${loc} contact phone`, `${term} ${loc} official website`, `best ${term} ${city}`];
   const results: LeadResult[] = [];
   const seenUrls = new Set<string>();
+  const deadline = Date.now() + 10000;
   for (const q of queries) {
-    if (results.length >= limit) break;
+    if (results.length >= limit || Date.now() > deadline) break;
     try {
       const r = await fetch("https://api.firecrawl.dev/v2/search", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({ query: q, limit: 10 }),
+        signal: AbortSignal.timeout(8000),
       });
       if (!r.ok) continue;
       const j = await r.json() as { data?: { web?: Array<{ url: string; title?: string; description?: string }> } | Array<any> };
@@ -412,7 +428,7 @@ export const extractLeads = createServerFn({ method: "POST" })
     // Enriquece email
     let enrichedCount = 0;
     if (data.enrichEmail) {
-      const sites = dedup.filter((r) => r.website && !r.email).map((r) => r.website!) as string[];
+      const sites = (dedup.filter((r) => r.website && !r.email).map((r) => r.website!) as string[]).slice(0, 25);
       const emailMap = await enrichEmailsBatch(sites);
       for (const r of dedup) {
         if (!r.email && r.website && emailMap.has(r.website)) {
