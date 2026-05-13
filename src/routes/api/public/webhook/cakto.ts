@@ -11,8 +11,43 @@ const webhookSchema = z.object({
     name: z.string().min(1).max(255).optional(),
     plan: z.string().min(1).max(50).optional(),
     product_id: z.string().max(100).optional(),
+    offer_id: z.string().max(100).optional(),
+    product_name: z.string().max(255).optional(),
   }),
 });
+
+const VALID_PLANS = new Set(["plus", "enterprise"]);
+
+/**
+ * Resolve which plan to deliver based on the Cakto checkout payload.
+ * Priority:
+ *  1. Explicit `plan` field if it's a known value (plus | enterprise)
+ *  2. product_id / offer_id matched against env mappings
+ *     - CAKTO_PRODUCT_PLUS / CAKTO_OFFER_PLUS  (comma-separated allowed)
+ *     - CAKTO_PRODUCT_ENTERPRISE / CAKTO_OFFER_ENTERPRISE
+ *  3. product_name keyword fallback ("enterprise" / "plus")
+ *  4. Default: "plus"
+ */
+function resolvePlan(data: { plan?: string; product_id?: string; offer_id?: string; product_name?: string }): string {
+  const explicit = (data.plan || "").toLowerCase().trim();
+  if (VALID_PLANS.has(explicit)) return explicit;
+
+  const ids = [data.product_id, data.offer_id].filter(Boolean).map((s) => String(s).trim());
+  const inList = (env: string | undefined) =>
+    (env || "").split(",").map((s) => s.trim()).filter(Boolean);
+
+  const plusIds = [...inList(process.env.CAKTO_PRODUCT_PLUS), ...inList(process.env.CAKTO_OFFER_PLUS)];
+  const entIds = [...inList(process.env.CAKTO_PRODUCT_ENTERPRISE), ...inList(process.env.CAKTO_OFFER_ENTERPRISE)];
+
+  if (ids.some((i) => entIds.includes(i))) return "enterprise";
+  if (ids.some((i) => plusIds.includes(i))) return "plus";
+
+  const name = (data.product_name || "").toLowerCase();
+  if (name.includes("enterprise")) return "enterprise";
+  if (name.includes("plus")) return "plus";
+
+  return "plus";
+}
 
 const REFUND_EVENTS = new Set([
   "refunded",
@@ -60,14 +95,17 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
           try { parsedBody = JSON.parse(rawBody); } catch {}
           const bodySecret = parsedBody?.secret;
 
-          if (secret) {
-            const ok =
-              verifySignature(rawBody, headerSig, secret) ||
-              querySecret === secret ||
-              bodySecret === secret;
-            if (!ok) {
-              return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 401, headers: { "Content-Type": "application/json" } });
-            }
+          if (!secret) {
+            console.error("[cakto webhook] CAKTO_WEBHOOK_SECRET not configured — rejecting request");
+            return new Response(JSON.stringify({ error: "Webhook not configured" }), { status: 503, headers: { "Content-Type": "application/json" } });
+          }
+          const safeEq = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+          const ok =
+            verifySignature(rawBody, headerSig, secret) ||
+            (typeof querySecret === "string" && safeEq(querySecret, secret)) ||
+            (typeof bodySecret === "string" && safeEq(bodySecret, secret));
+          if (!ok) {
+            return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 401, headers: { "Content-Type": "application/json" } });
           }
 
           await supabaseAdmin.from("webhook_logs").insert({
@@ -104,6 +142,7 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
           if (PURCHASE_EVENTS.has(eventLower)) {
             const DEFAULT_PASSWORD = "0000";
             const today = new Date().toISOString().slice(0, 10);
+            const resolvedPlan = resolvePlan(data);
 
             const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
               email: data.email,
@@ -118,27 +157,27 @@ export const Route = createFileRoute("/api/public/webhook/cakto")({
                 if (existingUser) {
                   await supabaseAdmin.auth.admin.updateUserById(existingUser.id, { password: DEFAULT_PASSWORD });
                   await supabaseAdmin.from("profiles").update({
-                    plan: data.plan || "plus",
+                    plan: resolvedPlan,
                     status: "active",
                     must_change_password: true,
                     purchase_date: today,
                   }).eq("id", existingUser.id);
                 }
-                return new Response(JSON.stringify({ success: true, message: "User updated" }), { status: 200, headers: { "Content-Type": "application/json" } });
+                return new Response(JSON.stringify({ success: true, message: "User updated", plan: resolvedPlan }), { status: 200, headers: { "Content-Type": "application/json" } });
               }
               return new Response(JSON.stringify({ error: authError.message }), { status: 500, headers: { "Content-Type": "application/json" } });
             }
 
             if (authData.user) {
               await supabaseAdmin.from("profiles").update({
-                plan: data.plan || "plus",
+                plan: resolvedPlan,
                 status: "active",
                 must_change_password: true,
                 purchase_date: today,
               }).eq("id", authData.user.id);
             }
 
-            return new Response(JSON.stringify({ success: true, user_email: data.email }), { status: 200, headers: { "Content-Type": "application/json" } });
+            return new Response(JSON.stringify({ success: true, user_email: data.email, plan: resolvedPlan }), { status: 200, headers: { "Content-Type": "application/json" } });
           }
 
           if (eventLower === "cancelled" || eventLower === "canceled") {
