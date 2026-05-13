@@ -11,8 +11,43 @@ const webhookSchema = z.object({
     name: z.string().min(1).max(255).optional(),
     plan: z.string().min(1).max(50).optional(),
     product_id: z.string().max(100).optional(),
+    offer_id: z.string().max(100).optional(),
+    product_name: z.string().max(255).optional(),
   }),
 });
+
+const VALID_PLANS = new Set(["plus", "enterprise"]);
+
+/**
+ * Resolve which plan to deliver based on the Cakto checkout payload.
+ * Priority:
+ *  1. Explicit `plan` field if it's a known value (plus | enterprise)
+ *  2. product_id / offer_id matched against env mappings
+ *     - CAKTO_PRODUCT_PLUS / CAKTO_OFFER_PLUS  (comma-separated allowed)
+ *     - CAKTO_PRODUCT_ENTERPRISE / CAKTO_OFFER_ENTERPRISE
+ *  3. product_name keyword fallback ("enterprise" / "plus")
+ *  4. Default: "plus"
+ */
+function resolvePlan(data: { plan?: string; product_id?: string; offer_id?: string; product_name?: string }): string {
+  const explicit = (data.plan || "").toLowerCase().trim();
+  if (VALID_PLANS.has(explicit)) return explicit;
+
+  const ids = [data.product_id, data.offer_id].filter(Boolean).map((s) => String(s).trim());
+  const inList = (env: string | undefined) =>
+    (env || "").split(",").map((s) => s.trim()).filter(Boolean);
+
+  const plusIds = [...inList(process.env.CAKTO_PRODUCT_PLUS), ...inList(process.env.CAKTO_OFFER_PLUS)];
+  const entIds = [...inList(process.env.CAKTO_PRODUCT_ENTERPRISE), ...inList(process.env.CAKTO_OFFER_ENTERPRISE)];
+
+  if (ids.some((i) => entIds.includes(i))) return "enterprise";
+  if (ids.some((i) => plusIds.includes(i))) return "plus";
+
+  const name = (data.product_name || "").toLowerCase();
+  if (name.includes("enterprise")) return "enterprise";
+  if (name.includes("plus")) return "plus";
+
+  return "plus";
+}
 
 const REFUND_EVENTS = new Set([
   "refunded",
