@@ -41,6 +41,48 @@ export type Database = {
         }
         Relationships: []
       }
+      account_issue_reports: {
+        Row: {
+          account_id: string
+          account_name: string | null
+          admin_notes: string | null
+          created_at: string
+          id: string
+          reason: string
+          resolved_at: string | null
+          status: string
+          stock_item_id: string | null
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          account_name?: string | null
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          resolved_at?: string | null
+          status?: string
+          stock_item_id?: string | null
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          account_name?: string | null
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          resolved_at?: string | null
+          status?: string
+          stock_item_id?: string | null
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       account_stock_items: {
         Row: {
           account_id: string
@@ -51,6 +93,12 @@ export type Database = {
           delivered_to_email: string | null
           id: string
           is_used: boolean
+          label: string | null
+          manually_assigned: boolean
+          marked_bad: boolean
+          marked_bad_at: string | null
+          marked_bad_reason: string | null
+          position: number
         }
         Insert: {
           account_id: string
@@ -61,6 +109,12 @@ export type Database = {
           delivered_to_email?: string | null
           id?: string
           is_used?: boolean
+          label?: string | null
+          manually_assigned?: boolean
+          marked_bad?: boolean
+          marked_bad_at?: string | null
+          marked_bad_reason?: string | null
+          position?: number
         }
         Update: {
           account_id?: string
@@ -71,6 +125,12 @@ export type Database = {
           delivered_to_email?: string | null
           id?: string
           is_used?: boolean
+          label?: string | null
+          manually_assigned?: boolean
+          marked_bad?: boolean
+          marked_bad_at?: string | null
+          marked_bad_reason?: string | null
+          position?: number
         }
         Relationships: [
           {
@@ -81,6 +141,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      account_suppliers: {
+        Row: {
+          account_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          quantity: number
+          supplier_name: string
+          supplier_url: string | null
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity?: number
+          supplier_name: string
+          supplier_url?: string | null
+          unit_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity?: number
+          supplier_name?: string
+          supplier_url?: string | null
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       accounts: {
         Row: {
@@ -99,6 +195,7 @@ export type Database = {
           name: string
           observations: string | null
           password: string | null
+          rotation_days: number
           sort_order: number | null
           status: string
           unlimited_stock: boolean
@@ -120,6 +217,7 @@ export type Database = {
           name: string
           observations?: string | null
           password?: string | null
+          rotation_days?: number
           sort_order?: number | null
           status?: string
           unlimited_stock?: boolean
@@ -141,6 +239,7 @@ export type Database = {
           name?: string
           observations?: string | null
           password?: string | null
+          rotation_days?: number
           sort_order?: number | null
           status?: string
           unlimited_stock?: boolean
@@ -738,11 +837,33 @@ export type Database = {
       }
     }
     Functions: {
+      admin_assign_stock_to_user: {
+        Args: {
+          _account_id: string
+          _content: string
+          _label?: string
+          _user_id: string
+        }
+        Returns: string
+      }
       admin_clear_all_stock: { Args: never; Returns: undefined }
       admin_delete_all_accounts: { Args: never; Returns: undefined }
+      admin_resolve_issue_report: {
+        Args: { _notes?: string; _report_id: string }
+        Returns: undefined
+      }
       broadcast_notification: {
         Args: { _message: string; _plan?: string; _title: string }
         Returns: number
+      }
+      claim_shared_account: {
+        Args: { _account_id: string }
+        Returns: {
+          content: string
+          exhausted: boolean
+          item_id: string
+          label: string
+        }[]
       }
       claim_stock_item: {
         Args: { _account_id: string }
@@ -757,6 +878,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      report_account_issue: {
+        Args: { _reason: string; _stock_item_id: string }
+        Returns: {
+          escalated: boolean
+          new_content: string
+          new_item_id: string
+          new_label: string
+        }[]
       }
       resolve_support_request: {
         Args: { _request_id: string }
