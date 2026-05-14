@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "vite build",
-  "outputDirectory": ".output/public",
-  "installCommand": "bun install",
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/:path*",
+      "destination": "https://infinityias.lovable.app/:path*"
+    }
   ]
 }
