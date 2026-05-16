@@ -266,8 +266,12 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
       const existing = await findUserByEmail(admin, email);
       if (existing) {
         // Reativação: garante senha 0000 + must_change_password e plano correto pelo valor
-        await admin.auth.admin.updateUserById(existing.id, { password: DEFAULT_PASSWORD });
+        await admin.auth.admin.updateUserById(existing.id, {
+          password: DEFAULT_PASSWORD,
+          user_metadata: { ...(existing.user_metadata || {}), full_name: data.name || existing.user_metadata?.full_name || email },
+        });
         await admin.from("profiles").update({
+          full_name: data.name || email,
           plan: resolvedPlan,
           status: "active",
           must_change_password: true,
@@ -287,6 +291,7 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
         }
         if (createRes?.user) {
           await admin.from("profiles").update({
+            full_name: data.name || email,
             plan: resolvedPlan,
             status: "active",
             must_change_password: true,

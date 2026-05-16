@@ -662,6 +662,10 @@ function AdminPlans() {
 
 function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState({ full_name: "", email: "", password: "" });
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => { load(); }, []);
   const load = async () => {
     const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
@@ -669,6 +673,32 @@ function AdminUsers() {
   };
   const updateStatus = async (id: string, status: string) => { await supabase.from("profiles").update({ status }).eq("id", id); toast.success("Status atualizado!"); load(); };
   const updatePlan = async (id: string, plan: string) => { await supabase.from("profiles").update({ plan }).eq("id", id); toast.success("Plano atualizado!"); load(); };
+
+  const openEdit = (u: any) => {
+    setEditing(u);
+    setForm({ full_name: u.full_name || "", email: u.email || "", password: "" });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(true);
+    try {
+      const { adminUpdateUser } = await import("@/lib/admin-users.functions");
+      const payload: any = { userId: editing.id };
+      if (form.full_name.trim() && form.full_name.trim() !== (editing.full_name || "")) payload.full_name = form.full_name.trim();
+      if (form.email.trim() && form.email.trim().toLowerCase() !== (editing.email || "").toLowerCase()) payload.email = form.email.trim();
+      if (form.password.trim()) payload.password = form.password.trim();
+      if (Object.keys(payload).length === 1) { toast.info("Nada para atualizar"); setSaving(false); return; }
+      await adminUpdateUser({ data: payload });
+      toast.success("Usuário atualizado!");
+      setEditing(null);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message || "Falha ao atualizar");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div>
@@ -697,7 +727,8 @@ function AdminUsers() {
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded-full text-xs ${u.status === "active" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{u.status}</span>
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                  <button onClick={() => openEdit(u)} className="px-3 py-1 rounded-lg text-xs border border-border text-muted-foreground hover:text-foreground">Editar</button>
                   <button onClick={() => updateStatus(u.id, u.status === "active" ? "blocked" : "active")} className="px-3 py-1 rounded-lg text-xs border border-border text-muted-foreground hover:text-foreground">
                     {u.status === "active" ? "Bloquear" : "Ativar"}
                   </button>
@@ -707,6 +738,32 @@ function AdminUsers() {
           </tbody>
         </table>
       </div>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !saving && setEditing(null)}>
+          <div className="glass rounded-2xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-foreground">Editar usuário</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Nome</label>
+                <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-input border border-border text-foreground" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Email</label>
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-input border border-border text-foreground" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Nova senha (opcional)</label>
+                <input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Deixe em branco para manter" className="w-full px-3 py-2 rounded-lg bg-input border border-border text-foreground" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button disabled={saving} onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg text-sm border border-border text-muted-foreground hover:text-foreground">Cancelar</button>
+              <button disabled={saving} onClick={saveEdit} className="px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground font-medium disabled:opacity-50">{saving ? "Salvando..." : "Salvar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
