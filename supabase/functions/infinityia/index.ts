@@ -12,17 +12,41 @@ const corsHeaders = {
 };
 
 const VALID_PLANS = new Set(["plus", "enterprise"]);
-const REFUND_EVENTS = new Set([
+// Eventos que DESATIVAM a conta (reembolso, chargeback, cancelamento, atraso)
+const DEACTIVATE_EVENTS = new Set([
   "refunded", "refund", "chargeback", "charged_back",
   "dispute", "disputed", "reembolso", "estorno",
+  "cancelled", "canceled", "subscription_cancelled", "assinatura_cancelada",
+  "subscription_canceled", "cancellation", "cancelamento",
+  "subscription_late", "assinatura_atrasada", "late", "overdue", "atrasada",
+  "subscription_overdue", "payment_failed", "pagamento_falhou", "failed",
+  "subscription_expired", "expired", "expirada", "assinatura_expirada",
 ]);
+// Eventos que ATIVAM/RENOVAM a conta
 const PURCHASE_EVENTS = new Set([
   "purchase", "approved", "paid", "purchase_approved", "compra_aprovada",
-  "subscription_renewed", "assinatura_renovada", "renewed",
+  "subscription_renewed", "assinatura_renovada", "renewed", "renewal",
+  "subscription_created", "subscription_activated", "reactivated",
 ]);
-const CANCEL_EVENTS = new Set([
-  "cancelled", "canceled", "subscription_cancelled", "assinatura_cancelada",
-]);
+
+// Preços oficiais Cakto → plano
+const PRICE_TO_PLAN: Record<string, "plus" | "enterprise"> = {
+  "37.90": "plus", "37,90": "plus", "3790": "plus",
+  "67.90": "enterprise", "67,90": "enterprise", "6790": "enterprise",
+};
+
+function planFromAmount(raw: unknown): "plus" | "enterprise" | null {
+  if (raw === undefined || raw === null) return null;
+  const num = Number(String(raw).replace(",", "."));
+  if (Number.isFinite(num)) {
+    // valores podem vir em centavos
+    const normalized = num > 1000 ? num / 100 : num;
+    if (Math.abs(normalized - 37.9) < 0.5) return "plus";
+    if (Math.abs(normalized - 67.9) < 0.5) return "enterprise";
+  }
+  const key = String(raw).trim();
+  return PRICE_TO_PLAN[key] ?? null;
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
