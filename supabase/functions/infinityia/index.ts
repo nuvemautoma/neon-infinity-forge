@@ -156,7 +156,6 @@ function runInBackground(promise: Promise<unknown>) {
 }
 
 async function processWebhook(rawBody: string, contentType: string | null, requestUrl: string, headers: Headers) {
-  let rawBody = "";
   try {
     const parsedBody = parsePayload(rawBody, contentType);
     const normalized = normalizeIncomingPayload(parsedBody);
