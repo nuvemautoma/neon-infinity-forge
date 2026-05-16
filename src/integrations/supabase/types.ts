@@ -625,6 +625,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string
+          expires_at: string | null
           full_name: string | null
           id: string
           must_change_password: boolean
@@ -637,6 +638,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email: string
+          expires_at?: string | null
           full_name?: string | null
           id: string
           must_change_password?: boolean
@@ -649,6 +651,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           email?: string
+          expires_at?: string | null
           full_name?: string | null
           id?: string
           must_change_password?: boolean
