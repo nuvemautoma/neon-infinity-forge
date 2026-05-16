@@ -298,6 +298,8 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
       await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
         .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
       return;
+    }
+
     return;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
