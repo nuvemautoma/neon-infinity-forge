@@ -30,7 +30,11 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
     }
 
-    const profilePatch: Record<string, unknown> = {};
+    const profilePatch: {
+      full_name?: string;
+      email?: string;
+      must_change_password?: boolean;
+    } = {};
     if (data.full_name !== undefined) profilePatch.full_name = data.full_name;
     if (data.email) profilePatch.email = data.email;
     if (data.password) profilePatch.must_change_password = false;
