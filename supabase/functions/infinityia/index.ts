@@ -12,17 +12,41 @@ const corsHeaders = {
 };
 
 const VALID_PLANS = new Set(["plus", "enterprise"]);
-const REFUND_EVENTS = new Set([
+// Eventos que DESATIVAM a conta (reembolso, chargeback, cancelamento, atraso)
+const DEACTIVATE_EVENTS = new Set([
   "refunded", "refund", "chargeback", "charged_back",
   "dispute", "disputed", "reembolso", "estorno",
+  "cancelled", "canceled", "subscription_cancelled", "assinatura_cancelada",
+  "subscription_canceled", "cancellation", "cancelamento",
+  "subscription_late", "assinatura_atrasada", "late", "overdue", "atrasada",
+  "subscription_overdue", "payment_failed", "pagamento_falhou", "failed",
+  "subscription_expired", "expired", "expirada", "assinatura_expirada",
 ]);
+// Eventos que ATIVAM/RENOVAM a conta
 const PURCHASE_EVENTS = new Set([
   "purchase", "approved", "paid", "purchase_approved", "compra_aprovada",
-  "subscription_renewed", "assinatura_renovada", "renewed",
+  "subscription_renewed", "assinatura_renovada", "renewed", "renewal",
+  "subscription_created", "subscription_activated", "reactivated",
 ]);
-const CANCEL_EVENTS = new Set([
-  "cancelled", "canceled", "subscription_cancelled", "assinatura_cancelada",
-]);
+
+// Preços oficiais Cakto → plano
+const PRICE_TO_PLAN: Record<string, "plus" | "enterprise"> = {
+  "37.90": "plus", "37,90": "plus", "3790": "plus",
+  "67.90": "enterprise", "67,90": "enterprise", "6790": "enterprise",
+};
+
+function planFromAmount(raw: unknown): "plus" | "enterprise" | null {
+  if (raw === undefined || raw === null) return null;
+  const num = Number(String(raw).replace(",", "."));
+  if (Number.isFinite(num)) {
+    // valores podem vir em centavos
+    const normalized = num > 1000 ? num / 100 : num;
+    if (Math.abs(normalized - 37.9) < 0.5) return "plus";
+    if (Math.abs(normalized - 67.9) < 0.5) return "enterprise";
+  }
+  const key = String(raw).trim();
+  return PRICE_TO_PLAN[key] ?? null;
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -76,6 +100,11 @@ function normalizeIncomingPayload(parsedBody: any) {
       product_id: get(parsedBody, ["data.product_id", "product_id", "product.id", "data.product.id", "payload.product.id"]),
       offer_id: get(parsedBody, ["data.offer_id", "offer_id", "offer.id", "data.offer.id", "payload.offer.id"]),
       product_name: get(parsedBody, ["data.product_name", "product_name", "product.name", "data.product.name", "payload.product.name"]),
+      amount: get(parsedBody, [
+        "data.amount", "amount", "data.price", "price", "data.value", "value",
+        "data.total", "total", "payload.amount", "payload.price",
+        "product.price", "data.product.price", "offer.price", "data.offer.price",
+      ]),
     },
   };
 }
@@ -85,18 +114,24 @@ function inList(env: string | undefined): string[] {
 }
 
 function resolvePlan(data: {
-  plan?: string; product_id?: string; offer_id?: string; product_name?: string;
+  plan?: string; product_id?: string; offer_id?: string; product_name?: string; amount?: unknown;
 }): string {
+  // 1) plano explícito
   const explicit = (data.plan || "").toLowerCase().trim();
   if (VALID_PLANS.has(explicit)) return explicit;
 
+  // 2) por VALOR do check-out (regra solicitada: 37,90 = plus / 67,90 = enterprise)
+  const byAmount = planFromAmount(data.amount);
+  if (byAmount) return byAmount;
+
+  // 3) por IDs configurados via env
   const ids = [data.product_id, data.offer_id].filter(Boolean).map((s) => String(s).trim());
   const plusIds = [...inList(Deno.env.get("CAKTO_PRODUCT_PLUS")), ...inList(Deno.env.get("CAKTO_OFFER_PLUS"))];
   const entIds = [...inList(Deno.env.get("CAKTO_PRODUCT_ENTERPRISE")), ...inList(Deno.env.get("CAKTO_OFFER_ENTERPRISE"))];
-
   if (ids.some((i) => entIds.includes(i))) return "enterprise";
   if (ids.some((i) => plusIds.includes(i))) return "plus";
 
+  // 4) pelo nome do produto
   const name = (data.product_name || "").toLowerCase();
   if (name.includes("enterprise")) return "enterprise";
   if (name.includes("plus")) return "plus";
@@ -205,26 +240,9 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
       return;
     }
 
-    // REFUND => deletar conta
-    if (REFUND_EVENTS.has(event)) {
-      const existing = await findUserByEmail(admin, email);
-      if (existing) {
-        await admin.from("notifications").delete().eq("user_id", existing.id);
-        await admin.from("support_requests").delete().eq("user_id", existing.id);
-        await admin.from("account_stock_items").update({
-          delivered_to: null, delivered_to_email: null, delivered_at: null, is_used: false,
-        }).eq("delivered_to", existing.id);
-        await admin.from("user_roles").delete().eq("user_id", existing.id);
-        await admin.from("profiles").delete().eq("id", existing.id);
-        await admin.auth.admin.deleteUser(existing.id);
-      }
-      await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
-        .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
-      return;
-    }
-
-    // CANCEL => desativar
-    if (CANCEL_EVENTS.has(event)) {
+    // DESATIVAR (reembolso, chargeback, cancelamento, atraso, expiração)
+    // Mantém o e-mail e a senha; conta fica indisponível para login até nova compra/renovação.
+    if (DEACTIVATE_EVENTS.has(event)) {
       const existing = await findUserByEmail(admin, email);
       if (existing) {
         await admin.from("profiles").update({
@@ -232,36 +250,22 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
           expires_at: new Date().toISOString(),
         }).eq("id", existing.id);
       }
+      await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
+        .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
       return;
     }
 
-    // PURCHASE / RENEW => criar ou atualizar
+    // PURCHASE / RENEW => criar OU reativar (mesmo e-mail volta a funcionar)
     if (PURCHASE_EVENTS.has(event)) {
       const DEFAULT_PASSWORD = "0000";
       const today = new Date().toISOString().slice(0, 10);
       const resolvedPlan = resolvePlan(data);
       const expiresAt = computeExpiresAt(30);
+      console.info(`[infinityia] purchase ${email} amount=${data.amount} -> plan=${resolvedPlan}`);
 
-      const { data: createRes, error: createErr } = await admin.auth.admin.createUser({
-        email,
-        password: DEFAULT_PASSWORD,
-        email_confirm: true,
-        user_metadata: { full_name: data.name || email },
-      });
-
-      if (createErr) {
-        const msg = createErr.message || "";
-        const isDuplicate = msg.includes("already") || msg.includes("registered") || msg.includes("exists");
-        if (!isDuplicate) {
-          console.error("[infinityia] createUser error:", msg);
-          return;
-        }
-        const existing = await findUserByEmail(admin, email);
-        if (!existing) {
-          console.error("[infinityia] User exists but not found", email);
-          return;
-        }
-
+      const existing = await findUserByEmail(admin, email);
+      if (existing) {
+        // Reativação: garante senha 0000 + must_change_password e plano correto pelo valor
         await admin.auth.admin.updateUserById(existing.id, { password: DEFAULT_PASSWORD });
         await admin.from("profiles").update({
           plan: resolvedPlan,
@@ -270,19 +274,29 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
           purchase_date: today,
           expires_at: expiresAt,
         }).eq("id", existing.id);
-
-        return;
+      } else {
+        const { data: createRes, error: createErr } = await admin.auth.admin.createUser({
+          email,
+          password: DEFAULT_PASSWORD,
+          email_confirm: true,
+          user_metadata: { full_name: data.name || email },
+        });
+        if (createErr) {
+          console.error("[infinityia] createUser error:", createErr.message);
+          return;
+        }
+        if (createRes?.user) {
+          await admin.from("profiles").update({
+            plan: resolvedPlan,
+            status: "active",
+            must_change_password: true,
+            purchase_date: today,
+            expires_at: expiresAt,
+          }).eq("id", createRes.user.id);
+        }
       }
-
-      if (createRes?.user) {
-        await admin.from("profiles").update({
-          plan: resolvedPlan,
-          status: "active",
-          must_change_password: true,
-          purchase_date: today,
-          expires_at: expiresAt,
-        }).eq("id", createRes.user.id);
-      }
+      await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
+        .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
       return;
     }
 
