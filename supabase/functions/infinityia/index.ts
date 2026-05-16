@@ -30,6 +30,56 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const get = (obj: any, paths: string[]): unknown => {
+  for (const path of paths) {
+    const value = path.split(".").reduce((acc, key) => acc?.[key], obj);
+    if (value !== undefined && value !== null && String(value).trim() !== "") return value;
+  }
+  return undefined;
+};
+
+function parseFormEncoded(rawBody: string): Record<string, unknown> {
+  const params = new URLSearchParams(rawBody);
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of params.entries()) out[key] = value;
+  return out;
+}
+
+function parsePayload(rawBody: string, contentType: string | null): any {
+  if (!rawBody.trim()) return {};
+  if (contentType?.includes("application/x-www-form-urlencoded")) return parseFormEncoded(rawBody);
+  try { return JSON.parse(rawBody); } catch { return parseFormEncoded(rawBody); }
+}
+
+function normalizeIncomingPayload(parsedBody: any) {
+  const data = parsedBody?.data || parsedBody?.payload || parsedBody?.sale || parsedBody?.order || parsedBody;
+  const event = String(get(parsedBody, [
+    "event", "event_name", "type", "status", "data.event", "data.status", "payload.event", "payload.status",
+  ]) || "purchase_approved").toLowerCase().trim();
+  const email = String(get(parsedBody, [
+    "data.email", "data.customer.email", "data.buyer.email", "data.client.email", "payload.email",
+    "payload.customer.email", "customer.email", "buyer.email", "client.email", "user.email",
+    "email", "customer_email", "buyer_email", "client_email", "user_email",
+  ]) || "").trim().toLowerCase();
+  const name = String(get(parsedBody, [
+    "data.name", "data.customer.name", "data.buyer.name", "payload.customer.name", "customer.name",
+    "buyer.name", "client.name", "name", "customer_name", "buyer_name", "client_name",
+  ]) || email || "").trim();
+
+  return {
+    event,
+    data: {
+      ...data,
+      email,
+      name,
+      plan: get(parsedBody, ["data.plan", "plan", "payload.plan", "product.plan"]),
+      product_id: get(parsedBody, ["data.product_id", "product_id", "product.id", "data.product.id", "payload.product.id"]),
+      offer_id: get(parsedBody, ["data.offer_id", "offer_id", "offer.id", "data.offer.id", "payload.offer.id"]),
+      product_name: get(parsedBody, ["data.product_name", "product_name", "product.name", "data.product.name", "payload.product.name"]),
+    },
+  };
+}
+
 function inList(env: string | undefined): string[] {
   return (env || "").split(",").map((s) => s.trim()).filter(Boolean);
 }
