@@ -156,8 +156,8 @@ Deno.serve(async (req) => {
   let rawBody = "";
   try {
     rawBody = await req.text();
-    let parsedBody: any = {};
-    try { parsedBody = JSON.parse(rawBody); } catch { /* ignore */ }
+    const parsedBody = parsePayload(rawBody, req.headers.get("content-type"));
+    const normalized = normalizeIncomingPayload(parsedBody);
 
     const secret = Deno.env.get("CAKTO_WEBHOOK_SECRET")?.trim();
     if (secret) {
@@ -190,17 +190,18 @@ Deno.serve(async (req) => {
     // log de recebimento
     await admin.from("webhook_logs").insert({
       source: "cakto",
-      event_type: parsedBody?.event || "incoming",
-      payload: parsedBody,
+      event_type: normalized.event || "incoming",
+      payload: { raw: parsedBody, normalized },
       status: "received",
     });
 
-    const event = String(parsedBody?.event || "").toLowerCase().trim();
-    const data = parsedBody?.data || {};
-    const email = String(data?.email || "").trim().toLowerCase();
+    const event = normalized.event;
+    const data = normalized.data;
+    const email = data.email;
 
-    if (!event || !email) {
-      return json({ error: "Invalid payload: 'event' and 'data.email' required" }, 400);
+    if (!email) {
+      console.warn("[infinityia] payload received without email; acknowledged to avoid Cakto retry", rawBody.slice(0, 500));
+      return json({ success: true, action: "received_without_email" });
     }
 
     // REFUND => deletar conta
@@ -217,7 +218,7 @@ Deno.serve(async (req) => {
         await admin.auth.admin.deleteUser(existing.id);
       }
       await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
-        .eq("source", "cakto").eq("event_type", parsedBody?.event).order("created_at", { ascending: false }).limit(1);
+        .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
       return json({ success: true, action: "refund_deleted", email });
     }
 
