@@ -149,24 +149,26 @@ function computeExpiresAt(days = 30): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+function runInBackground(promise: Promise<unknown>) {
+  const edgeRuntime = (globalThis as any).EdgeRuntime;
+  if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(promise);
+  else promise.catch((err) => console.error("[infinityia] background fatal:", err));
+}
 
+async function processWebhook(rawBody: string, contentType: string | null, requestUrl: string, headers: Headers) {
   let rawBody = "";
   try {
-    rawBody = await req.text();
-    const parsedBody = parsePayload(rawBody, req.headers.get("content-type"));
+    const parsedBody = parsePayload(rawBody, contentType);
     const normalized = normalizeIncomingPayload(parsedBody);
 
     const secret = Deno.env.get("CAKTO_WEBHOOK_SECRET")?.trim();
     if (secret) {
-      const url = new URL(req.url);
-      const headerSig = req.headers.get("x-webhook-signature") || req.headers.get("x-cakto-signature");
+      const url = new URL(requestUrl);
+      const headerSig = headers.get("x-webhook-signature") || headers.get("x-cakto-signature");
       const headerSecret =
-        req.headers.get("x-api-key") ||
-        req.headers.get("x-cakto-token") ||
-        req.headers.get("x-cakto-secret");
+        headers.get("x-api-key") ||
+        headers.get("x-cakto-token") ||
+        headers.get("x-cakto-secret");
       const querySecret = url.searchParams.get("secret");
       const bodySecret = parsedBody?.secret || parsedBody?.token || parsedBody?.webhook_secret;
 
@@ -179,7 +181,7 @@ Deno.serve(async (req) => {
 
       if (!ok) {
         console.warn("[infinityia] invalid signature/secret");
-        return json({ error: "Invalid signature" }, 401);
+        return;
       }
     } else {
       console.info("[infinityia] CAKTO_WEBHOOK_SECRET not configured; accepting unsigned Cakto POST");
@@ -201,7 +203,7 @@ Deno.serve(async (req) => {
 
     if (!email) {
       console.warn("[infinityia] payload received without email; acknowledged to avoid Cakto retry", rawBody.slice(0, 500));
-      return json({ success: true, action: "received_without_email" });
+      return;
     }
 
     // REFUND => deletar conta
@@ -219,7 +221,7 @@ Deno.serve(async (req) => {
       }
       await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
         .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
-      return json({ success: true, action: "refund_deleted", email });
+      return;
     }
 
     // CANCEL => desativar
@@ -231,7 +233,7 @@ Deno.serve(async (req) => {
           expires_at: new Date().toISOString(),
         }).eq("id", existing.id);
       }
-      return json({ success: true, action: "cancelled", email });
+      return;
     }
 
     // PURCHASE / RENEW => criar ou atualizar
@@ -253,10 +255,13 @@ Deno.serve(async (req) => {
         const isDuplicate = msg.includes("already") || msg.includes("registered") || msg.includes("exists");
         if (!isDuplicate) {
           console.error("[infinityia] createUser error:", msg);
-          return json({ error: msg }, 500);
+          return;
         }
         const existing = await findUserByEmail(admin, email);
-        if (!existing) return json({ error: "User exists but not found" }, 500);
+        if (!existing) {
+          console.error("[infinityia] User exists but not found", email);
+          return;
+        }
 
         await admin.auth.admin.updateUserById(existing.id, { password: DEFAULT_PASSWORD });
         await admin.from("profiles").update({
@@ -267,7 +272,7 @@ Deno.serve(async (req) => {
           expires_at: expiresAt,
         }).eq("id", existing.id);
 
-        return json({ success: true, action: "renewed", email, plan: resolvedPlan, expires_at: expiresAt });
+        return;
       }
 
       if (createRes?.user) {
@@ -279,10 +284,10 @@ Deno.serve(async (req) => {
           expires_at: expiresAt,
         }).eq("id", createRes.user.id);
       }
-      return json({ success: true, action: "created", email, plan: resolvedPlan, expires_at: expiresAt });
+      return;
     }
 
-    return json({ success: true, action: "ignored", event });
+    return;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[infinityia] fatal:", msg, "body:", rawBody.slice(0, 500));
@@ -295,6 +300,14 @@ Deno.serve(async (req) => {
         status: "error",
       });
     } catch { /* ignore */ }
-    return json({ error: "Internal server error", detail: msg }, 500);
   }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  const rawBody = await req.text();
+  runInBackground(processWebhook(rawBody, req.headers.get("content-type"), req.url, req.headers));
+  return json({ success: true, received: true });
 });
