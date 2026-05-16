@@ -6,7 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-webhook-signature, x-cakto-signature, x-api-key, x-cakto-token, x-cakto-secret",
 };
@@ -29,6 +29,56 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const get = (obj: any, paths: string[]): unknown => {
+  for (const path of paths) {
+    const value = path.split(".").reduce((acc, key) => acc?.[key], obj);
+    if (value !== undefined && value !== null && String(value).trim() !== "") return value;
+  }
+  return undefined;
+};
+
+function parseFormEncoded(rawBody: string): Record<string, unknown> {
+  const params = new URLSearchParams(rawBody);
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of params.entries()) out[key] = value;
+  return out;
+}
+
+function parsePayload(rawBody: string, contentType: string | null): any {
+  if (!rawBody.trim()) return {};
+  if (contentType?.includes("application/x-www-form-urlencoded")) return parseFormEncoded(rawBody);
+  try { return JSON.parse(rawBody); } catch { return parseFormEncoded(rawBody); }
+}
+
+function normalizeIncomingPayload(parsedBody: any) {
+  const data = parsedBody?.data || parsedBody?.payload || parsedBody?.sale || parsedBody?.order || parsedBody;
+  const event = String(get(parsedBody, [
+    "event", "event_name", "type", "status", "data.event", "data.status", "payload.event", "payload.status",
+  ]) || "purchase_approved").toLowerCase().trim();
+  const email = String(get(parsedBody, [
+    "data.email", "data.customer.email", "data.buyer.email", "data.client.email", "payload.email",
+    "payload.customer.email", "customer.email", "buyer.email", "client.email", "user.email",
+    "email", "customer_email", "buyer_email", "client_email", "user_email",
+  ]) || "").trim().toLowerCase();
+  const name = String(get(parsedBody, [
+    "data.name", "data.customer.name", "data.buyer.name", "payload.customer.name", "customer.name",
+    "buyer.name", "client.name", "name", "customer_name", "buyer_name", "client_name",
+  ]) || email || "").trim();
+
+  return {
+    event,
+    data: {
+      ...data,
+      email,
+      name,
+      plan: get(parsedBody, ["data.plan", "plan", "payload.plan", "product.plan"]),
+      product_id: get(parsedBody, ["data.product_id", "product_id", "product.id", "data.product.id", "payload.product.id"]),
+      offer_id: get(parsedBody, ["data.offer_id", "offer_id", "offer.id", "data.offer.id", "payload.offer.id"]),
+      product_name: get(parsedBody, ["data.product_name", "product_name", "product.name", "data.product.name", "payload.product.name"]),
+    },
+  };
+}
 
 function inList(env: string | undefined): string[] {
   return (env || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -99,24 +149,25 @@ function computeExpiresAt(days = 30): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+function runInBackground(promise: Promise<unknown>) {
+  const edgeRuntime = (globalThis as any).EdgeRuntime;
+  if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(promise);
+  else promise.catch((err) => console.error("[infinityia] background fatal:", err));
+}
 
-  let rawBody = "";
+async function processWebhook(rawBody: string, contentType: string | null, requestUrl: string, headers: Headers) {
   try {
-    rawBody = await req.text();
-    let parsedBody: any = {};
-    try { parsedBody = JSON.parse(rawBody); } catch { /* ignore */ }
+    const parsedBody = parsePayload(rawBody, contentType);
+    const normalized = normalizeIncomingPayload(parsedBody);
 
     const secret = Deno.env.get("CAKTO_WEBHOOK_SECRET")?.trim();
     if (secret) {
-      const url = new URL(req.url);
-      const headerSig = req.headers.get("x-webhook-signature") || req.headers.get("x-cakto-signature");
+      const url = new URL(requestUrl);
+      const headerSig = headers.get("x-webhook-signature") || headers.get("x-cakto-signature");
       const headerSecret =
-        req.headers.get("x-api-key") ||
-        req.headers.get("x-cakto-token") ||
-        req.headers.get("x-cakto-secret");
+        headers.get("x-api-key") ||
+        headers.get("x-cakto-token") ||
+        headers.get("x-cakto-secret");
       const querySecret = url.searchParams.get("secret");
       const bodySecret = parsedBody?.secret || parsedBody?.token || parsedBody?.webhook_secret;
 
@@ -129,7 +180,7 @@ Deno.serve(async (req) => {
 
       if (!ok) {
         console.warn("[infinityia] invalid signature/secret");
-        return json({ error: "Invalid signature" }, 401);
+        return;
       }
     } else {
       console.info("[infinityia] CAKTO_WEBHOOK_SECRET not configured; accepting unsigned Cakto POST");
@@ -140,17 +191,18 @@ Deno.serve(async (req) => {
     // log de recebimento
     await admin.from("webhook_logs").insert({
       source: "cakto",
-      event_type: parsedBody?.event || "incoming",
-      payload: parsedBody,
+      event_type: normalized.event || "incoming",
+      payload: { raw: parsedBody, normalized },
       status: "received",
     });
 
-    const event = String(parsedBody?.event || "").toLowerCase().trim();
-    const data = parsedBody?.data || {};
-    const email = String(data?.email || "").trim().toLowerCase();
+    const event = normalized.event;
+    const data = normalized.data;
+    const email = data.email;
 
-    if (!event || !email) {
-      return json({ error: "Invalid payload: 'event' and 'data.email' required" }, 400);
+    if (!email) {
+      console.warn("[infinityia] payload received without email; acknowledged to avoid Cakto retry", rawBody.slice(0, 500));
+      return;
     }
 
     // REFUND => deletar conta
@@ -167,8 +219,8 @@ Deno.serve(async (req) => {
         await admin.auth.admin.deleteUser(existing.id);
       }
       await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
-        .eq("source", "cakto").eq("event_type", parsedBody?.event).order("created_at", { ascending: false }).limit(1);
-      return json({ success: true, action: "refund_deleted", email });
+        .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
+      return;
     }
 
     // CANCEL => desativar
@@ -180,7 +232,7 @@ Deno.serve(async (req) => {
           expires_at: new Date().toISOString(),
         }).eq("id", existing.id);
       }
-      return json({ success: true, action: "cancelled", email });
+      return;
     }
 
     // PURCHASE / RENEW => criar ou atualizar
@@ -202,10 +254,13 @@ Deno.serve(async (req) => {
         const isDuplicate = msg.includes("already") || msg.includes("registered") || msg.includes("exists");
         if (!isDuplicate) {
           console.error("[infinityia] createUser error:", msg);
-          return json({ error: msg }, 500);
+          return;
         }
         const existing = await findUserByEmail(admin, email);
-        if (!existing) return json({ error: "User exists but not found" }, 500);
+        if (!existing) {
+          console.error("[infinityia] User exists but not found", email);
+          return;
+        }
 
         await admin.auth.admin.updateUserById(existing.id, { password: DEFAULT_PASSWORD });
         await admin.from("profiles").update({
@@ -216,7 +271,7 @@ Deno.serve(async (req) => {
           expires_at: expiresAt,
         }).eq("id", existing.id);
 
-        return json({ success: true, action: "renewed", email, plan: resolvedPlan, expires_at: expiresAt });
+        return;
       }
 
       if (createRes?.user) {
@@ -228,10 +283,10 @@ Deno.serve(async (req) => {
           expires_at: expiresAt,
         }).eq("id", createRes.user.id);
       }
-      return json({ success: true, action: "created", email, plan: resolvedPlan, expires_at: expiresAt });
+      return;
     }
 
-    return json({ success: true, action: "ignored", event });
+    return;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[infinityia] fatal:", msg, "body:", rawBody.slice(0, 500));
@@ -244,6 +299,16 @@ Deno.serve(async (req) => {
         status: "error",
       });
     } catch { /* ignore */ }
-    return json({ error: "Internal server error", detail: msg }, 500);
   }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method === "HEAD") return new Response(null, { status: 200, headers: corsHeaders });
+  if (req.method === "GET") return json({ success: true, service: "infinityia", ready: true });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  const rawBody = await req.text();
+  runInBackground(processWebhook(rawBody, req.headers.get("content-type"), req.url, req.headers));
+  return json({ success: true, received: true });
 });
