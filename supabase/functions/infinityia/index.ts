@@ -240,26 +240,9 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
       return;
     }
 
-    // REFUND => deletar conta
-    if (REFUND_EVENTS.has(event)) {
-      const existing = await findUserByEmail(admin, email);
-      if (existing) {
-        await admin.from("notifications").delete().eq("user_id", existing.id);
-        await admin.from("support_requests").delete().eq("user_id", existing.id);
-        await admin.from("account_stock_items").update({
-          delivered_to: null, delivered_to_email: null, delivered_at: null, is_used: false,
-        }).eq("delivered_to", existing.id);
-        await admin.from("user_roles").delete().eq("user_id", existing.id);
-        await admin.from("profiles").delete().eq("id", existing.id);
-        await admin.auth.admin.deleteUser(existing.id);
-      }
-      await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
-        .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
-      return;
-    }
-
-    // CANCEL => desativar
-    if (CANCEL_EVENTS.has(event)) {
+    // DESATIVAR (reembolso, chargeback, cancelamento, atraso, expiração)
+    // Mantém o e-mail e a senha; conta fica indisponível para login até nova compra/renovação.
+    if (DEACTIVATE_EVENTS.has(event)) {
       const existing = await findUserByEmail(admin, email);
       if (existing) {
         await admin.from("profiles").update({
@@ -267,36 +250,22 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
           expires_at: new Date().toISOString(),
         }).eq("id", existing.id);
       }
+      await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
+        .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
       return;
     }
 
-    // PURCHASE / RENEW => criar ou atualizar
+    // PURCHASE / RENEW => criar OU reativar (mesmo e-mail volta a funcionar)
     if (PURCHASE_EVENTS.has(event)) {
       const DEFAULT_PASSWORD = "0000";
       const today = new Date().toISOString().slice(0, 10);
       const resolvedPlan = resolvePlan(data);
       const expiresAt = computeExpiresAt(30);
+      console.info(`[infinityia] purchase ${email} amount=${data.amount} -> plan=${resolvedPlan}`);
 
-      const { data: createRes, error: createErr } = await admin.auth.admin.createUser({
-        email,
-        password: DEFAULT_PASSWORD,
-        email_confirm: true,
-        user_metadata: { full_name: data.name || email },
-      });
-
-      if (createErr) {
-        const msg = createErr.message || "";
-        const isDuplicate = msg.includes("already") || msg.includes("registered") || msg.includes("exists");
-        if (!isDuplicate) {
-          console.error("[infinityia] createUser error:", msg);
-          return;
-        }
-        const existing = await findUserByEmail(admin, email);
-        if (!existing) {
-          console.error("[infinityia] User exists but not found", email);
-          return;
-        }
-
+      const existing = await findUserByEmail(admin, email);
+      if (existing) {
+        // Reativação: garante senha 0000 + must_change_password e plano correto pelo valor
         await admin.auth.admin.updateUserById(existing.id, { password: DEFAULT_PASSWORD });
         await admin.from("profiles").update({
           plan: resolvedPlan,
@@ -305,19 +274,31 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
           purchase_date: today,
           expires_at: expiresAt,
         }).eq("id", existing.id);
-
-        return;
+      } else {
+        const { data: createRes, error: createErr } = await admin.auth.admin.createUser({
+          email,
+          password: DEFAULT_PASSWORD,
+          email_confirm: true,
+          user_metadata: { full_name: data.name || email },
+        });
+        if (createErr) {
+          console.error("[infinityia] createUser error:", createErr.message);
+          return;
+        }
+        if (createRes?.user) {
+          await admin.from("profiles").update({
+            plan: resolvedPlan,
+            status: "active",
+            must_change_password: true,
+            purchase_date: today,
+            expires_at: expiresAt,
+          }).eq("id", createRes.user.id);
+        }
       }
-
-      if (createRes?.user) {
-        await admin.from("profiles").update({
-          plan: resolvedPlan,
-          status: "active",
-          must_change_password: true,
-          purchase_date: today,
-          expires_at: expiresAt,
-        }).eq("id", createRes.user.id);
-      }
+      await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })
+        .eq("source", "cakto").eq("event_type", event).order("created_at", { ascending: false }).limit(1);
+      return;
+    }
       return;
     }
 
