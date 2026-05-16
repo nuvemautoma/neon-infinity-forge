@@ -100,6 +100,11 @@ function normalizeIncomingPayload(parsedBody: any) {
       product_id: get(parsedBody, ["data.product_id", "product_id", "product.id", "data.product.id", "payload.product.id"]),
       offer_id: get(parsedBody, ["data.offer_id", "offer_id", "offer.id", "data.offer.id", "payload.offer.id"]),
       product_name: get(parsedBody, ["data.product_name", "product_name", "product.name", "data.product.name", "payload.product.name"]),
+      amount: get(parsedBody, [
+        "data.amount", "amount", "data.price", "price", "data.value", "value",
+        "data.total", "total", "payload.amount", "payload.price",
+        "product.price", "data.product.price", "offer.price", "data.offer.price",
+      ]),
     },
   };
 }
@@ -109,18 +114,24 @@ function inList(env: string | undefined): string[] {
 }
 
 function resolvePlan(data: {
-  plan?: string; product_id?: string; offer_id?: string; product_name?: string;
+  plan?: string; product_id?: string; offer_id?: string; product_name?: string; amount?: unknown;
 }): string {
+  // 1) plano explícito
   const explicit = (data.plan || "").toLowerCase().trim();
   if (VALID_PLANS.has(explicit)) return explicit;
 
+  // 2) por VALOR do check-out (regra solicitada: 37,90 = plus / 67,90 = enterprise)
+  const byAmount = planFromAmount(data.amount);
+  if (byAmount) return byAmount;
+
+  // 3) por IDs configurados via env
   const ids = [data.product_id, data.offer_id].filter(Boolean).map((s) => String(s).trim());
   const plusIds = [...inList(Deno.env.get("CAKTO_PRODUCT_PLUS")), ...inList(Deno.env.get("CAKTO_OFFER_PLUS"))];
   const entIds = [...inList(Deno.env.get("CAKTO_PRODUCT_ENTERPRISE")), ...inList(Deno.env.get("CAKTO_OFFER_ENTERPRISE"))];
-
   if (ids.some((i) => entIds.includes(i))) return "enterprise";
   if (ids.some((i) => plusIds.includes(i))) return "plus";
 
+  // 4) pelo nome do produto
   const name = (data.product_name || "").toLowerCase();
   if (name.includes("enterprise")) return "enterprise";
   if (name.includes("plus")) return "plus";
