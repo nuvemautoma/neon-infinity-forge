@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-webhook-signature, x-cakto-signature",
+    "authorization, x-client-info, apikey, content-type, x-webhook-signature, x-cakto-signature, x-api-key, x-cakto-token, x-cakto-secret",
 };
 
 const VALID_PLANS = new Set(["plus", "enterprise"]);
@@ -106,29 +106,33 @@ Deno.serve(async (req) => {
   let rawBody = "";
   try {
     rawBody = await req.text();
-    const secret = Deno.env.get("CAKTO_WEBHOOK_SECRET");
-    if (!secret) {
-      console.error("[infinityia] CAKTO_WEBHOOK_SECRET not configured");
-      return json({ error: "Webhook not configured" }, 503);
-    }
-
-    const url = new URL(req.url);
-    const headerSig = req.headers.get("x-webhook-signature") || req.headers.get("x-cakto-signature");
-    const querySecret = url.searchParams.get("secret");
-
     let parsedBody: any = {};
     try { parsedBody = JSON.parse(rawBody); } catch { /* ignore */ }
-    const bodySecret = parsedBody?.secret;
 
-    const sigOk = await verifySignature(rawBody, headerSig, secret);
-    const ok =
-      sigOk ||
-      (typeof querySecret === "string" && safeEq(querySecret, secret)) ||
-      (typeof bodySecret === "string" && safeEq(bodySecret, secret));
+    const secret = Deno.env.get("CAKTO_WEBHOOK_SECRET")?.trim();
+    if (secret) {
+      const url = new URL(req.url);
+      const headerSig = req.headers.get("x-webhook-signature") || req.headers.get("x-cakto-signature");
+      const headerSecret =
+        req.headers.get("x-api-key") ||
+        req.headers.get("x-cakto-token") ||
+        req.headers.get("x-cakto-secret");
+      const querySecret = url.searchParams.get("secret");
+      const bodySecret = parsedBody?.secret || parsedBody?.token || parsedBody?.webhook_secret;
 
-    if (!ok) {
-      console.warn("[infinityia] invalid signature/secret");
-      return json({ error: "Invalid signature" }, 401);
+      const sigOk = await verifySignature(rawBody, headerSig, secret);
+      const ok =
+        sigOk ||
+        (typeof headerSecret === "string" && safeEq(headerSecret, secret)) ||
+        (typeof querySecret === "string" && safeEq(querySecret, secret)) ||
+        (typeof bodySecret === "string" && safeEq(bodySecret, secret));
+
+      if (!ok) {
+        console.warn("[infinityia] invalid signature/secret");
+        return json({ error: "Invalid signature" }, 401);
+      }
+    } else {
+      console.info("[infinityia] CAKTO_WEBHOOK_SECRET not configured; accepting unsigned Cakto POST");
     }
 
     const admin = getAdmin();
