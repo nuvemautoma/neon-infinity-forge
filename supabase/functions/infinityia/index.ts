@@ -29,6 +29,25 @@ const PURCHASE_EVENTS = new Set([
   "subscription_created", "subscription_activated", "reactivated",
 ]);
 
+// Rótulos legíveis para o motivo do bloqueio (exibido no admin)
+const REASON_LABELS: Record<string, string> = {
+  refunded: "Reembolso solicitado", refund: "Reembolso solicitado",
+  reembolso: "Reembolso solicitado", estorno: "Estorno solicitado",
+  chargeback: "Chargeback aberto", charged_back: "Chargeback aberto",
+  dispute: "Disputa aberta", disputed: "Disputa aberta",
+  cancelled: "Assinatura cancelada", canceled: "Assinatura cancelada",
+  subscription_cancelled: "Assinatura cancelada", subscription_canceled: "Assinatura cancelada",
+  cancellation: "Assinatura cancelada", cancelamento: "Assinatura cancelada",
+  assinatura_cancelada: "Assinatura cancelada",
+  subscription_late: "Pagamento atrasado", assinatura_atrasada: "Pagamento atrasado",
+  late: "Pagamento atrasado", overdue: "Pagamento atrasado",
+  atrasada: "Pagamento atrasado", subscription_overdue: "Pagamento atrasado",
+  payment_failed: "Falha no pagamento", pagamento_falhou: "Falha no pagamento",
+  failed: "Falha no pagamento",
+  subscription_expired: "Assinatura expirada", expired: "Assinatura expirada",
+  expirada: "Assinatura expirada", assinatura_expirada: "Assinatura expirada",
+};
+
 // Preços oficiais Cakto → plano
 const PRICE_TO_PLAN: Record<string, "plus" | "enterprise"> = {
   "37.90": "plus", "37,90": "plus", "3790": "plus",
@@ -243,11 +262,24 @@ async function processWebhook(rawBody: string, contentType: string | null, reque
     // DESATIVAR (reembolso, chargeback, cancelamento, atraso, expiração)
     // Mantém o e-mail e a senha; conta fica indisponível para login até nova compra/renovação.
     if (DEACTIVATE_EVENTS.has(event)) {
+      const reasonLabel = REASON_LABELS[event] || `Conta bloqueada (${event})`;
+      const rawAmount = (data as any).amount;
+      let amountNum: number | null = null;
+      if (rawAmount !== undefined && rawAmount !== null) {
+        const n = Number(String(rawAmount).replace(",", "."));
+        if (Number.isFinite(n)) amountNum = n > 1000 ? n / 100 : n;
+      }
       const existing = await findUserByEmail(admin, email);
       if (existing) {
+        // revoga sessões ativas para forçar logout imediato
+        try { await admin.auth.admin.signOut(existing.id); } catch (_) { /* noop */ }
         await admin.from("profiles").update({
           status: "inactive",
           expires_at: new Date().toISOString(),
+          block_reason: reasonLabel,
+          block_event: event,
+          block_amount: amountNum,
+          blocked_at: new Date().toISOString(),
         }).eq("id", existing.id);
       }
       await admin.from("webhook_logs").update({ status: "processed", processed_at: new Date().toISOString() })

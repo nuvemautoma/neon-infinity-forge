@@ -28,6 +28,8 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
     if (Object.keys(authPatch).length > 0) {
       const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, authPatch);
       if (error) throw new Error(error.message);
+      // Invalida sessões ativas do usuário para forçar novo login com as credenciais atualizadas
+      try { await supabaseAdmin.auth.admin.signOut(data.userId); } catch (_) { /* noop */ }
     }
 
     const profilePatch: {
