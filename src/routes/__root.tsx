@@ -132,7 +132,7 @@ function RootComponent() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       queryClient.invalidateQueries();
       router.invalidate();
-      if (event === "SIGNED_OUT" || event === "USER_DELETED") {
+      if (event === "SIGNED_OUT") {
         const path = window.location.pathname;
         const publicPaths = ["/acess", "/reset-password", "/"];
         if (!publicPaths.includes(path)) {
