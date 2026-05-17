@@ -725,7 +725,16 @@ function AdminUsers() {
                   </select>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs ${u.status === "active" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{u.status}</span>
+                  <div className="flex flex-col gap-1">
+                    <span className={`px-2 py-1 rounded-full text-xs w-fit ${u.status === "active" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{u.status}</span>
+                    {u.status !== "active" && u.block_reason && (
+                      <span className="text-[10px] text-red-300/80 leading-tight">
+                        {u.block_reason}
+                        {u.block_amount != null && ` · R$ ${Number(u.block_amount).toFixed(2).replace(".", ",")}`}
+                        {u.blocked_at && ` · ${new Date(u.blocked_at).toLocaleDateString("pt-BR")}`}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
                   <button onClick={() => openEdit(u)} className="px-3 py-1 rounded-lg text-xs border border-border text-muted-foreground hover:text-foreground">Editar</button>

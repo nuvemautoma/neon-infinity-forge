@@ -7,6 +7,8 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 import appCss from "../styles.css?url";
 
@@ -117,6 +119,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
 
   if (typeof window !== "undefined" && "serviceWorker" in navigator) {
     const isPreview = location.hostname.includes("id-preview--") || location.hostname.includes("lovableproject.com");
@@ -124,6 +127,21 @@ function RootComponent() {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      queryClient.invalidateQueries();
+      router.invalidate();
+      if (event === "SIGNED_OUT") {
+        const path = window.location.pathname;
+        const publicPaths = ["/acess", "/reset-password", "/"];
+        if (!publicPaths.includes(path)) {
+          window.location.replace("/acess");
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [queryClient, router]);
 
   return (
     <QueryClientProvider client={queryClient}>

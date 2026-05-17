@@ -623,6 +623,10 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          block_amount: number | null
+          block_event: string | null
+          block_reason: string | null
+          blocked_at: string | null
           created_at: string
           email: string
           expires_at: string | null
@@ -636,6 +640,10 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          block_amount?: number | null
+          block_event?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
           created_at?: string
           email: string
           expires_at?: string | null
@@ -649,6 +657,10 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          block_amount?: number | null
+          block_event?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
           created_at?: string
           email?: string
           expires_at?: string | null
